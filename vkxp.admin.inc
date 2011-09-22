@@ -6,11 +6,11 @@
  */
 function vkxp_admin_main_settings() {
 
+  //process code request
   if ($_GET['code']){
-    //https://api.vkontakte.ru/oauth/access_token?client_id=APP_ID&client_secret=APP_SECRET&code=$code
     $params = array();
-    $params['client_id'] = 2494902;
-    $params['client_secret'] = 'P7wcna3mCRxcbvaeL4kq';
+    $params['client_id'] = variable_get('vkxp_app_id', 0);
+    $params['client_secret'] = variable_get('vkxp_app_secret', 0);
     $params['code'] = $_GET['code'];
     $data = http_build_query($params, '', '&');
     $ch = curl_init();
@@ -26,7 +26,8 @@ function vkxp_admin_main_settings() {
       variable_set('vkxp_access_token', $json_result['access_token']);
     }
   }
-    $form = array();
+
+  $form = array();
 
   $form['vkxp_enable'] = array(
     '#type' => 'checkbox',
@@ -43,37 +44,22 @@ function vkxp_admin_main_settings() {
     '#type' => 'textfield',
     '#title' => t('Group ID'),
     '#required' => true,
-    '#default_value' => variable_get('vkxp_group_id', 0),
+    '#default_value' => variable_get('vkxp_group_id', ''),
   );
 
-  $form['vkxp_main']['vkxp_login'] = array(
+  $form['vkxp_main']['vkxp_app_id'] = array(
     '#type' => 'textfield',
-    '#title' => t('Login'),
+    '#title' => t('Application ID'),
     '#required' => true,
-    '#default_value' => variable_get('vkxp_login', ''),
+    '#default_value' => variable_get('vkxp_app_id', ''),
   );
 
-  if (!variable_get('vkxp_hide_password', 0)) {
-    $form['vkxp_main']['vkxp_password'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Password'),
-      '#default_value' => variable_get('vkxp_password', ''),
-    );
-    $form['vkxp_main']['vkxp_hide_password'] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Hide password'),
-      '#default_value' => variable_get('vkxp_hide_password', 0),
-      '#description' => t("Check this option to permanently hide the plaintext password from peeking eyes. You may still change the password afterwards, but it won't be displayed anymore."),
-    );
-  }
-  else {
-    $have_password = (variable_get('vkxp_password', '') != '');
-    $form['vkxp_main']['vkxp_password'] = array(
-      '#type' => 'password',
-      '#title' => $have_password ? t('Change password') : t('Password'),
-      '#description' => $have_password ? t('Leave empty if you do not intend to change the current password.') : '',
-    );
-  }
+  $form['vkxp_main']['vkxp_app_secret'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Application secret code'),
+    '#required' => true,
+    '#default_value' => variable_get('vkxp_app_secret', ''),
+  );
 
   $form['vkxp_main']['vkxp_official'] = array(
     '#type' => 'checkbox',
@@ -97,46 +83,19 @@ function vkxp_admin_main_settings() {
  * Submit function for vkxp settings
  */
 function vkxp_admin_settings_submit($form, &$form_state) {
-
-  //http://api.vkontakte.ru/oauth/authorize?client_id=APP_ID&scope=SETTINGS&redirect_uri=REDIRECT_URI&response_type=code
-  $params = array();
-  $params['client_id'] = 2494902 ;
-  $params['scope'] = 'wall,groups,photos,offline';
-  $params['display'] = 'page';
-  $params['redirect_uri'] = url('admin/settings/vkxp/main', array('absolute' => TRUE));
-  $params['response_type'] = 'code';
-  $data = http_build_query($params, '', '&');
-  //$data = 'client_id=2494719&scope=wall,offline,groups&redirect_uri=http://localhost:81/duel/&response_type=code';
-  $url = 'http://api.vkontakte.ru/oauth/authorize?'. $data;
-  drupal_goto($url);
-  /*$ch = curl_init();
-  curl_setopt ($ch, CURLOPT_URL, 'http://api.vkontakte.ru/oauth/authorize');
-  curl_setopt ($ch, CURLOPT_POST, 1);
-  curl_setopt ($ch, CURLOPT_POSTFIELDS, $data);
-  curl_setopt ($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
-  curl_setopt ($ch, CURLOPT_RETURNTRANSFER, 1);
-  $result = curl_exec($ch);
-  curl_close($ch);*/
-
-
-  /*$values = $form_state['values'];
-  // If we have no cookies we should make file for it
-  if (!variable_get('vkxp_cookies', '')) {
-    if ($values['vkxp_group_id'] && $values['vkxp_login'] && $values['vkxp_official']) {
-      // Generate unique cookie filename
-      $hash = md5($values['vkxp_group_id'] . $values['vkxp_login'] . $values['vkxp_official']);
-      variable_set('vkxp_cookies', $hash .'.txt');
-    }
+  $values = $form_state['values'];
+  if ($values['vkxp_app_id']) {
+    variable_set('vkxp_user_id', $values['vkxp_app_id']);
+    $params = array();
+    $params['client_id'] = trim($values['vkxp_app_id']);
+    $params['scope'] = 'wall,groups,photos,offline';
+    $params['display'] = 'page';
+    $params['redirect_uri'] = url('admin/settings/vkxp/main', array('absolute' => TRUE));
+    $params['response_type'] = 'code';
+    $data = http_build_query($params, '', '&');
+    $url = 'http://api.vkontakte.ru/oauth/authorize?'. $data;
+    drupal_goto($url);
   }
-
-  // Reset cookies
-  // This may help if user did something wrong and now he can't post his data
-  if ($values['op'] == $form['reset']['#value']) {
-    $cookies = md5($values['vkxp_group_id'] . $values['vkxp_login'] . $values['vkxp_official']) . '.txt';
-    variable_set('vkxp_cookies', $cookies);
-    _vkxp_authorization($cookies);
-    drupal_set_message(t('New cookie file was generated.'));
-  }*/
 }
 
 
