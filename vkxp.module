@@ -1,0 +1,458 @@
+<?php
+
+// Define default variables
+define('VKXP_DEFAULT_BROWSER', 'Mozilla/5.0 (Windows; U; Windows NT 6.1; ru; rv:1.9.2.13) Gecko/20101203 Firefox/3.6.13)');
+
+/**
+ * Implementation of hook_menu()
+ */
+function vkxp_menu() {
+  $items = array();
+  $items['admin/settings/vkxp'] = array(
+    'title' => 'VKontakte CrossPoster',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('vkxp_admin_main_settings'),
+    'access arguments' => array('administer vkontakte crossposter'),
+    'file' => 'vkxp.admin.inc',
+  );
+  $items['admin/settings/vkxp/main'] = array(
+    'title' => 'Main settings',
+    'file' => 'vkxp.admin.inc',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  );
+  $items['admin/settings/vkxp/node'] = array(
+    'title' => 'Node settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('vkxp_admin_node_settings'),
+    'access arguments' => array('administer vkontakte crossposter'),
+    'file' => 'vkxp.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+  );
+  return $items;
+}
+
+/**
+ * Implementation of hook_perm()
+ */
+function vkxp_perm() {
+  return array('administer vkontakte crossposter');
+}
+
+/**
+ * Implementation of hook_nodeapi
+ */
+function vkxp_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
+  switch ($op) {
+    case 'insert':
+    case 'update':
+      if (variable_get('vkxp_enable', 0)) {
+
+        // Get node types that should be crossposted
+        $types = variable_get('vkxp_node_types', array());
+        $selected_types = array();
+        foreach ($types as $key => $type) {
+          if ($type) {
+            $selected_types[$key] = $type;
+          }
+        }
+
+        // If current node related to selected types list - crosspost it!
+        if (in_array($node->type, $selected_types)) {
+          // Get aliased node url
+          $url = url('node/'. $node->nid, array('absolute' => TRUE));
+
+          // Get title and trim if needed
+          $title = trim(strip_tags($node->title));
+          if (variable_get('vkxp_cut_title', 1)) {
+            $length = variable_get('vkxp_cut_title_length', 255);
+            if (drupal_strlen($title) > $length) {
+              $title = drupal_substr($title, 0, $length - 3) . '...';
+            }
+          }
+
+          // Get body and trim if needed
+          $body = trim(strip_tags($node->body));
+          if (variable_get('vkxp_cut_body', 1)) {
+            $length = variable_get('vkxp_cut_body_length', 255);
+            if (drupal_strlen($body) > $length) {
+              $body = drupal_substr($body, 0, $length - 3) . '...';
+            }
+          }
+
+          $access_token = variable_get('vkxp_access_token', '');
+
+          //get upload server
+          $params = array();
+          $params['gid'] = 30476667;
+          $params['access_token'] = $access_token;
+          $data = http_build_query($params, '', '&');
+          $result = _vkxp_curl_post('photos.getWallUploadServer', $data);
+          $result = json_decode($result, true);
+          $upload_url = $result['response']['upload_url'];
+          //parse upload url
+          $params = array();
+          $parser_url = parse_url($upload_url);
+          $separate_values = explode('&', $parser_url['query']);
+          foreach ($separate_values as $val) {
+            $arr = explode('=', $val);
+            $params[$arr[0]] = $arr[1];
+          }
+          $params['photo'] = 'http://grandtourism.by/sites/default/files/imagecache/165x120/busan-opera-house-by-ooda-office01.jpg';
+          //$params['access_token'] = $access_token;
+
+          // Upload photo
+          //$request_url = $parser_url['scheme'] .'://'. $parser_url['host'] . $parser_url['path'];
+          $request_url = $upload_url .'&'. urlencode($params['photo']);
+          $request_headers = array();
+          $request_method = 'POST';
+          $request_retry = 3;
+          $data = http_build_query($params);
+          $result = drupal_http_request($request_url, $request_headers, $request_method, NULL, $request_retry);
+          drupal_set_message(print_r($result, 1));
+
+          //upload photo
+          $params = array();
+          $params['photo'] = 'http://cs11236.vkontakte.ru/u3546809/a_9c7bc351.jpg';
+          $params['access_token'] = $access_token;
+          $data = http_build_query($params);
+
+          $ch = curl_init();
+          curl_setopt ($ch, CURLOPT_URL, $upload_url);
+          curl_setopt ($ch, CURLOPT_POST, 1);
+          curl_setopt ($ch, CURLOPT_POSTFIELDS, $data);
+          curl_setopt ($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
+          curl_setopt ($ch, CURLOPT_RETURNTRANSFER, 1);
+          curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+          curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+          $result = curl_exec($ch);
+          curl_close($ch);
+
+          $result = _vkxp_curl_post('', $data, $upload_url);
+          $result = json_decode($result, true);
+          $mid = $result['mid'];
+          $gid = $result['gid'];
+
+
+
+
+          $server = $result['server'];
+          $hash = $result['hash'];
+          $photo = $result['photo'];
+          drupal_set_message(print_r($result, 1));
+
+          //savePhoto
+          $params = array();
+          $params['access_token'] = $access_token;
+          $params['server'] = $server;
+          $params['photo'] = 'http://cs11236.vkontakte.ru/u3546809/a_9c7bc351.jpg';
+          $params['hash'] = $hash;
+          $params['gid'] = 30476667;
+          //$url = urlencode('http://cs11236.vkontakte.ru/u3546809/a_9c7bc351.jpg');
+          //$data = "server=$server&photo=$url&hash=$hash&gid=30476667&access_token=$access_token";
+          $data = http_build_query($params);
+          $result = _vkxp_curl_post('photos.saveWallPhoto', $data);
+          $result = json_decode($result, true);
+          drupal_set_message(print_r($result, 1));
+
+          //post message
+          $params = array();
+          $params['owner_id'] = '-30476667';
+          $params['message'] = $body;
+          $params['from_group'] = 1;
+          $params['access_token'] = $access_token;
+          $data = http_build_query($params, '', '&');
+
+          //wall.post
+          $result = _vkxp_curl_post('wall.post', $data);
+          $result = json_decode($result, true);
+
+          $posted = $result['response']['post_id'] ? TRUE : FALSE;
+          drupal_set_message(print_r($result, 1));
+
+          if ($posted) {
+            drupal_set_message(t('Data was successfully posted to vkontakte.ru'));
+          }
+          else {
+            drupal_set_message(t('Data was not posted to vkontakte.ru. Notice, that cookies reset may fix that trouble. (see !url)', array('!url' => url('admin/settings/vkxp'))), 'warning');
+          }
+        }
+      }
+      break;
+  }
+}
+
+function _vkxp_curl_post($method, $data, $url = 'https://api.vkontakte.ru/method/') {
+  $ch = curl_init();
+  curl_setopt ($ch, CURLOPT_URL, $url . $method);
+  curl_setopt ($ch, CURLOPT_POST, 1);
+  curl_setopt ($ch, CURLOPT_POSTFIELDS, $data);
+  curl_setopt ($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
+  curl_setopt ($ch, CURLOPT_RETURNTRANSFER, 1);
+  $result = curl_exec($ch);
+  curl_close($ch);
+  return $result;
+}
+
+/**
+ * Post node data to vkontakte.ru
+ * @param  $url: aliased uri of node page
+ * @param  $title: node title
+ * @param  $message: node body
+ * @param  $description: cutted node body
+ * @return bool: Post results
+ */
+function vkxp_post($url, $title, $message,$image_url)  {
+
+  http://api.vkontakte.ru/oauth/authorize?client_id=APP_ID&scope=SETTINGS&redirect_uri=REDIRECT_URI&response_type=code
+
+  // Load cookies filename
+  $cookies = variable_get('vkxp_cookies', '');
+
+  // Load vk post hash
+  $post_hash = _vkxp_post_hash($cookies);
+
+  // If params not availible user should authore
+  if(!$post_hash) {
+    _vkxp_authorization($cookies);
+    $post_hash = _vkxp_post_hash($cookies);
+  }
+
+  if ($post_hash && $cookies) {
+    // Post data and return result
+    return _vkxp_send_data($cookies, $post_hash, $url, $message, $title, $message, $image_url);
+  }
+  // Return FALSE if couldn't authirize and get post hash
+  return FALSE;
+}
+
+/**
+ * Hepler function
+ * Performs authorization on vkontakte.ru
+ */
+function _vkxp_authorization($cookies) {
+  // Set login information
+  $login    = trim(variable_get('vkxp_login', ''));
+  // Do not trim password because it may begins or ends with spaces
+  $password = variable_get('vkxp_password', '');
+
+  // Options for http query
+  $options = array(
+    'act' => '',
+    'login'=> '',
+    'q' => '1',
+    'al_frame' => '1',
+    'captcha_sid' => '',
+    'captcha_key' => '',
+    'from_host' => 'vkontakte.ru',
+    'expire' => '',
+    'email' => $login,
+    'pass' => $password,
+    'success_url' => '',
+    'fail_url' => '',
+    'try_to_login' => '',
+    'to' => '',
+    'vk' => '',
+    'al_test' => '3'
+  );
+  $data = http_build_query($options, '', '&');
+
+  // User authorization
+  $curl = curl_init();
+  curl_setopt($curl, CURLOPT_URL, 'http://vkontakte.ru/login.php');
+  curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+  curl_setopt($curl, CURLOPT_FOLLOWLOCATION, 1);
+  curl_setopt($curl, CURLOPT_COOKIEJAR, $cookies);
+  curl_setopt($curl, CURLOPT_COOKIEFILE, $cookies);
+  curl_setopt($curl, CURLOPT_POST, 1);
+  curl_setopt($curl, CURLOPT_USERAGENT, VKXP_DEFAULT_BROWSER);
+  curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
+  curl_exec($curl);
+  curl_close($curl);
+}
+
+/**
+ * Helper function
+ * Getting post hash
+ */
+function _vkxp_post_hash($cookies) {
+
+  // Load user settings
+  $curl = curl_init();
+  curl_setopt($curl, CURLOPT_HEADER, 1);
+  curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+  curl_setopt($curl, CURLOPT_REFERER, 'http://vkontakte.ru/settings.php');
+  curl_setopt($curl, CURLOPT_FOLLOWLOCATION, 1);
+  curl_setopt($curl, CURLOPT_USERAGENT, VKXP_DEFAULT_BROWSER);
+  curl_setopt($curl, CURLOPT_COOKIEJAR, $cookies);
+  curl_setopt($curl, CURLOPT_COOKIEFILE, $cookies);
+  curl_setopt($curl, CURLOPT_URL, 'http://vkontakte.ru/club4151228');
+  $request = curl_exec($curl);
+  curl_close($curl);
+
+  // Find post hash
+  preg_match_all('/"post_hash":"(\w+)"/i', $request, $post_hash);
+
+  // Return array with founded post hasj
+  return $post_hash[1][0];
+}
+
+/**
+ * Helper function
+ * Post date to wall
+ * Return post result
+ */
+function _vkxp_send_data($cookies, $hash, $url, $message, $title, $description, $image_url) {
+
+  // Get post options
+  $group_id = variable_get('vkxp_group_id', 0);
+  $official = variable_get('vkxp_official', 1);
+
+  /*if ($image_url) {
+    $media = _vkxp_upload_photo($cookies, $url, $image_url);
+  }*/
+
+  // Set options for http query
+  // options for sending text, url and image
+  $options = array(
+    'act'	=> 'post',
+    'al' => 1,
+    'attach1'	=> '3546809_268327607',
+    'attach1_type'	=> 'share',
+    'description'	=> $message,
+    'extra' => 0,
+    'extra_data'	=> '',
+    'facebook_export'	=> '',
+    'friends_only' => '',
+    'hash' => $hash,
+    'message' => '',
+    'note_title' => '',
+    'official' =>	$official,
+    'photo_url'	=> $image_url,
+    'status_export'	=> '',
+    'title'	=> $title,
+    'to_id'	=> -$group_id,
+    'type' => 'all',
+    'url'	=> 'http://drupalace.ru/',
+  );
+
+  // options for sending text only
+  $options = array(
+    'act' => 'post',
+    'al' => 1,
+    'hash' => $hash,
+    'message' => $message,
+    'note_title' => '',
+    'official' => $official,
+    'status_export' => '',
+    'to_id' => -$group_id,
+    'type' => 'all',
+    'media_type' => 'share',
+    'url' => $url,
+    'title' => $title,
+    'description' => $message,
+  );
+  $data = http_build_query($options, '', '&');
+
+  // Send data to wall
+  $curl = curl_init();
+  curl_setopt($curl, CURLOPT_HEADER, 0);
+  curl_setopt($curl, CURLOPT_HTTPHEADER, array('X-Requested-With: XMLHttpRequest'));
+  curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+  curl_setopt($curl, CURLOPT_POST, 1);
+  curl_setopt($curl, CURLOPT_REFERER, 'http://vkontakte.ru/id3546809');
+  curl_setopt($curl, CURLOPT_FOLLOWLOCATION, 1);
+  curl_setopt($curl, CURLOPT_USERAGENT, VKXP_DEFAULT_BROWSER);
+  curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
+  curl_setopt($curl, CURLOPT_COOKIEJAR,  $cookies);
+  curl_setopt($curl, CURLOPT_COOKIEFILE, $cookies);
+  curl_setopt($curl, CURLOPT_TIMEOUT, 15);
+  curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 15);
+  curl_setopt($curl, CURLOPT_URL, 'http://vkontakte.ru/al_wall.php');
+  $result = curl_exec($curl);
+  curl_close($curl);
+
+  // Process results
+  $code = preg_match_all('/page_wall_count_all/smi', $result, $matches);
+  if($code == 0 ) {
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Hepler function
+ * Upload image on vk server and return it identifier
+ */
+function _vkxp_upload_photo($cookies, $url, $image)  {
+  // Set options for http query
+  $options = array(
+    'act' => 'a_photo',
+    'url' => $url,
+    'image' => $image,
+    'extra' => 0,
+    'index' => 1,
+  );
+  $data = http_build_query($options, '', '&');
+
+  $curl = curl_init();
+  curl_setopt($curl, CURLOPT_HEADER, 1);
+  curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+  @curl_setopt($curl, CURLOPT_FOLLOWLOCATION, 1);
+  curl_setopt($curl, CURLOPT_USERAGENT, VKXP_DEFAULT_BROWSER);
+  curl_setopt($curl, CURLOPT_COOKIEJAR, $cookies);
+  curl_setopt($curl, CURLOPT_COOKIEFILE, $cookies);
+  curl_setopt($curl, CURLOPT_POST, 1);
+  curl_setopt($curl, CURLOPT_REFERER, 'http://vkontakte.ru/share.php');
+  curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
+  curl_setopt($curl, CURLOPT_URL, 'http://vkontakte.ru/share.php');
+  $r = curl_exec_follow($curl);
+  curl_close($curl);
+
+  // Return mixed id if photo was uploaded
+  if(preg_match('/onUploadDone/i', $r, $o)) {
+    preg_match_all('/{"user_id":(\d+),"photo_id":(\d+)}/i', $r, $out);
+    $user_id = $out[1][0];
+    $photo_id =  $out[2][0];
+    return $user_id . '_' . $photo_id;
+  }
+  return false;
+}
+
+function curl_exec_follow($ch) {
+  $mr = 5; //max redirections
+  if (ini_get('open_basedir') == '' && ini_get('safe_mode' == 'Off')) {
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+    curl_setopt($ch, CURLOPT_MAXREDIRS, $mr);
+  }
+  else {
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
+    if ($mr > 0) {
+      $newurl = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
+      $rch = curl_copy_handle($ch);
+      curl_setopt($rch, CURLOPT_HEADER, true);
+      curl_setopt($rch, CURLOPT_NOBODY, true);
+      curl_setopt($rch, CURLOPT_FORBID_REUSE, false);
+      curl_setopt($rch, CURLOPT_RETURNTRANSFER, true);
+      do {
+        curl_setopt($rch, CURLOPT_URL, $newurl);
+        $header = curl_exec($rch);
+        if (curl_errno($rch)) {
+          $code = 0;
+        }
+        else {
+          $code = curl_getinfo($rch, CURLINFO_HTTP_CODE);
+          if ($code == 301 || $code == 302) {
+            preg_match('/Location:(.*?)\n/', $header, $matches);
+            $newurl = trim(array_pop($matches));
+          }
+          else {
+            $code = 0;
+          }
+        }
+      } while ($code && --$mr);
+      curl_close($rch);
+      curl_setopt($ch, CURLOPT_URL, $newurl);
+    }
+  }
+  return curl_exec($ch);
+}
