@@ -82,70 +82,52 @@ function vkxp_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
           $access_token = variable_get('vkxp_access_token', '');
           $group_id = variable_get('vkxp_group_id', '');
 
-          //get upload server
-          /*$params = array();
+          // Get upload server
+          $params = array();
           $params['gid'] = $group_id;
           $params['access_token'] = $access_token;
-          $data = http_build_query($params, '', '&');
-          $result = _vkxp_curl_post('photos.getWallUploadServer', $data);
+          $result = _vkxp_curl_post('photos.getWallUploadServer', $params);
           $result = json_decode($result, true);
           $upload_url = $result['response']['upload_url'];
-          drupal_set_message($upload_url);*/
-
-          // Settings photo
-          $photo = 'http://drupalace.ru/sites/all/themes/drupalace/logo.png';
-
-          // Upload photo via http request
-          /*$request_url = $upload_url .'&photo='. urlencode($photo);
-          $request_headers = array();
-          $request_method = 'POST';
-          $request_retry = 3;
-          $result = drupal_http_request($request_url, $request_headers, $request_method, NULL, $request_retry);
-          drupal_set_message(print_r($result, 1));
 
           // Upload photo via cURL
-          $params = array();
-          $params['photo'] = 'http://cs11236.vkontakte.ru/u3546809/a_9c7bc351.jpg';
-          $data = http_build_query($params, '', '&');
           $ch = curl_init();
           curl_setopt ($ch, CURLOPT_URL, $upload_url);
           curl_setopt ($ch, CURLOPT_POST, 1);
-          curl_setopt ($ch, CURLOPT_POSTFIELDS, $data);
-          curl_setopt ($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
           curl_setopt ($ch, CURLOPT_RETURNTRANSFER, 1);
-          curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-          curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+          curl_setopt ($ch, CURLOPT_POSTFIELDS, array('photo' => '@' . dirname(__FILE__) .'/x_55a8c888.jpg'));
+          curl_setopt ($ch, CURLOPT_USERAGENT, VKXP_DEFAULT_BROWSER);
           $result = curl_exec($ch);
           curl_close($ch);
-          $result = json_decode($result, true);
-          drupal_set_message(print_r($result, 1));
+          $load_result = json_decode($result, true);
           
           //savePhoto
           $params = array();
           $params['access_token'] = $access_token;
-          $params['server'] = $result['server'];
-          $params['photo'] = $result['photo'];
-          $params['hash'] = $result['hash'];
+          $params['server'] = $load_result['server'];
+          $params['photo'] = $load_result['photo'];
+          $params['hash'] = $load_result['hash'];
           $params['gid'] = $group_id;
-          $data = http_build_query($params);
-          $result = _vkxp_curl_post('photos.saveWallPhoto', $data);
+          $result = _vkxp_curl_post('photos.saveWallPhoto', $params);
           $result = json_decode($result, true);
-          drupal_set_message(print_r($result, 1));*/
+          $id = $result['response'][0]['id'];
 
           //post message
           $params = array();
-          $params['owner_id'] = "-". $group_id;
+          //$params['owner_id'] = "-$group_id";
+          $params['owner_id'] = 3546809;
           $params['message'] = $body;
-          $params['from_group'] = 1;
+          $params['from_group'] = variable_get('vkxp_official', 1);
+          $params['attachments'] = $id .','. $url;
           $params['access_token'] = $access_token;
-          $data = http_build_query($params, '', '&');
-          $result = _vkxp_curl_post('wall.post', $data);
+          $result = _vkxp_curl_post('wall.post', $params);
           $result = json_decode($result, true);
-          drupal_set_message(print_r($result, 1));
-          $posted = $result['response']['post_id'] ? TRUE : FALSE;
 
-          if ($posted) {
+          if ($result['response']['post_id']) {
             drupal_set_message(t('Data was successfully posted to vkontakte.ru'));
+          }
+          elseif ($result['response']['processing']) {
+            drupal_set_message(t('Data for vkontakte.ru was accepted, but will be posted a little bit later'));
           }
           else {
             drupal_set_message(t('Data was not posted to vkontakte.ru.'), 'warning');
