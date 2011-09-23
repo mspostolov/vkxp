@@ -80,7 +80,7 @@ function vkxp_admin_main_settings() {
 }
 
 /**
- * Submit function for vkxp settings
+ * Submit function for vkxp main settings
  */
 function vkxp_admin_settings_submit($form, &$form_state) {
   $values = $form_state['values'];
@@ -97,7 +97,6 @@ function vkxp_admin_settings_submit($form, &$form_state) {
     drupal_goto($url);
   }
 }
-
 
 /**
  * Page callback
@@ -117,25 +116,6 @@ function vkxp_admin_node_settings() {
     '#title' => t('Node types to crosspost'),
     '#options' => $options,
     '#default_value' => variable_get('vkxp_node_types', array()),
-  );
-
-  $form['vkxp_title'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Titles'),
-  );
-
-  $form['vkxp_title']['vkxp_cut_title'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Cut title'),
-    '#default_value' => variable_get('vkxp_cut_title', 1),
-  );
-
-  $form['vkxp_title']['vkxp_cut_title_length'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Cut if title length more than'),
-    '#field_suffix' => t('symbols'),
-    '#size' => 4,
-    '#default_value' => variable_get('vkxp_cut_title_length', 81),
   );
 
   $form['vkxp_body'] = array(
@@ -158,4 +138,68 @@ function vkxp_admin_node_settings() {
   );
 
   return system_settings_form($form);
+}
+
+/**
+ * Return form width vkxp image settings
+ */
+function vkxp_admin_images_settings() {
+  $form = array();
+  // Get node types that should be crossposted
+  $selected_node_types = _vkxp_get_selected_node_types();
+  if (!$selected_node_types) {
+    return t('Please, select content types to see their image fiels');
+  }
+
+  if (module_exists('imagefield')) {
+    $image_fields = array();
+    $content_info = _content_type_info();
+    foreach ($selected_node_types as $node_type) {
+
+      // Build fieldset for every selected node type
+      $node_types = node_get_types('names');
+      $form['vkxp_node_type_'. $node_type] = array(
+        '#type' => 'fieldset',
+        '#title' => t($node_types[$node_type]),
+      );
+
+      // If node type has cck fields we should find imagefield
+      if($content_info['content types'][$node_type]['fields']) {
+        $fields = $content_info['content types'][$node_type]['fields'];
+        foreach ($fields as $field) {
+          if ($field['widget']['module'] == 'imagefield') {
+            $image_fields[$node_type][$field['field_name']] = $field['field_name'];
+          }
+        }
+      }
+
+      // If imagefield for this node type found - build settings form for that
+      if ($image_fields[$node_type]) {
+        $form['vkxp_node_type_'. $node_type][$node_type .'_image_amount'] = array(
+          '#type' => 'select',
+          '#title' => t('Select amount of images'),
+          '#options' => drupal_map_assoc(array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)),
+          '#default_value' => variable_get($node_type .'_image_amount', 0),
+          '#description' => t('Amount of images which will be posted to vkontakte.ru'),
+        );
+        $form['vkxp_node_type_'. $node_type][$node_type .'_image_field'] = array(
+          '#type' => 'select',
+          '#title' => t('Select imagefield'),
+          '#options' => $image_fields[$node_type],
+          '#default_value' => variable_get($node_type .'_image_field', ''),
+          '#description' => t('Selected field will be posted with message to vkontakte.ru'),
+        );
+      }
+      else {
+        $form['vkxp_node_type_'. $node_type]['empty_value'] = array('#value' => t('This node types does not contain image fields'));
+      }
+    }
+  }
+  else {
+    return t("You can't post images until !imagefield module is installed.", array('!imagefield' => '<a href = "http://drupal.org/project/imagefield">imagefield</a>'));
+  }
+
+  $form = system_settings_form($form);
+  unset($form['buttons']['reset']);
+  return $form;
 }
