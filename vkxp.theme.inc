@@ -1,7 +1,12 @@
 <?php
 
 /**
- * Makes http query to vk using cURL library
+ * @file
+ * Theme function used for VK api queries 
+ */
+
+/**
+ * Makes http query to VK api using cURL library
  * @param  $method: vkontakte api method (http://vkontakte.ru/developers.php#devstep2)
  * @param  $params: array of post fields
  * @param  $request_url: url to make query

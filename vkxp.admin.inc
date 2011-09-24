@@ -1,6 +1,11 @@
 <?php
 
 /**
+ * @file
+ * Contains vkxp settings forms
+ */
+
+/**
  * Page callback
  * Return form with main settings
  */

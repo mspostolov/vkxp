@@ -207,11 +207,9 @@ function _vkxp_get_selected_node_types() {
  * @return upload url on success or FALSE on failure
  */
 function _vkxp_get_upload_server() {
-  $access_token = variable_get('vkxp_access_token', '');
-  $group_id = variable_get('vkxp_group_id', '');
   $params = array();
-  $params['gid'] = $group_id;
-  $params['access_token'] = $access_token;
+  $params['gid'] = variable_get('vkxp_group_id', '');
+  $params['access_token'] = variable_get('vkxp_access_token', '');
   $result = theme('vkxp_query', 'photos.getWallUploadServer', $params);
   if ($result['response']['upload_url']) {
     return $result['response']['upload_url'];

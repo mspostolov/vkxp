@@ -1,0 +1,207 @@
+# $Id$
+#
+# LANGUAGE translation of Drupal (general)
+# Copyright YEAR NAME <EMAIL@ADDRESS>
+# Generated from files:
+#  vkxp.admin.inc: n/a
+#  vkxp.module: n/a
+#  vkxp.info: n/a
+#  vkxp.install: n/a
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"POT-Creation-Date: 2011-09-24 07:13+0200\n"
+"PO-Revision-Date: YYYY-mm-DD HH:MM+ZZZZ\n"
+"Last-Translator: NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <EMAIL@ADDRESS>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+
+#: vkxp.admin.inc:23
+msgid "Access token was recieved from vkontakte. Now you may post your nodes there."
+msgstr ""
+
+#: vkxp.admin.inc:26
+msgid "Access token was not recieved from vkontakte. Please, check your app ID and app secret"
+msgstr ""
+
+#: vkxp.admin.inc:34
+msgid "Enable VKontakte crossposter"
+msgstr ""
+
+#: vkxp.admin.inc:40 vkxp.module:32
+msgid "Main settings"
+msgstr ""
+
+#: vkxp.admin.inc:45
+msgid "Group ID"
+msgstr ""
+
+#: vkxp.admin.inc:52
+msgid "Application ID"
+msgstr ""
+
+#: vkxp.admin.inc:59
+msgid "Application secret code"
+msgstr ""
+
+#: vkxp.admin.inc:66
+msgid "Checkbox \"Post this node to vkontakte.ru\" are checked by default"
+msgstr ""
+
+#: vkxp.admin.inc:68
+msgid "Check this if you want checkbox \"Post this node to vkontakte.ru\" in node form was checked by default"
+msgstr ""
+
+#: vkxp.admin.inc:73
+msgid "Write from group name"
+msgstr ""
+
+#: vkxp.admin.inc:75
+msgid "Check this if you want to post messages from group name"
+msgstr ""
+
+#: vkxp.admin.inc:80
+msgid "Add link on wall to posted page"
+msgstr ""
+
+#: vkxp.admin.inc:82
+msgid "Check this if you want to post node url on vk wall"
+msgstr ""
+
+#: vkxp.admin.inc:117
+msgid "Node types"
+msgstr ""
+
+#: vkxp.admin.inc:123
+msgid "Node types to crosspost"
+msgstr ""
+
+#: vkxp.admin.inc:130
+msgid "Messages"
+msgstr ""
+
+#: vkxp.admin.inc:135
+msgid "Message body"
+msgstr ""
+
+#: vkxp.admin.inc:136
+msgid "Select what to post as wall message"
+msgstr ""
+
+#: vkxp.admin.inc:138
+msgid "Node title"
+msgstr ""
+
+#: vkxp.admin.inc:139
+msgid "Node body"
+msgstr ""
+
+#: vkxp.admin.inc:140
+msgid "Node title and node body"
+msgstr ""
+
+#: vkxp.admin.inc:147
+msgid "Cut message"
+msgstr ""
+
+#: vkxp.admin.inc:153
+msgid "Cut if message length more than"
+msgstr ""
+
+#: vkxp.admin.inc:154
+msgid "symbols"
+msgstr ""
+
+#: vkxp.admin.inc:170
+msgid "Please, select content types to see their image fiels"
+msgstr ""
+
+#: vkxp.admin.inc:199
+msgid "Select amount of images"
+msgstr ""
+
+#: vkxp.admin.inc:202
+msgid "Amount of images which will be posted to vkontakte.ru"
+msgstr ""
+
+#: vkxp.admin.inc:206
+msgid "Select imagefield"
+msgstr ""
+
+#: vkxp.admin.inc:209
+msgid "Selected field will be posted with message to vkontakte.ru"
+msgstr ""
+
+#: vkxp.admin.inc:213
+msgid "This node types does not contain image fields"
+msgstr ""
+
+#: vkxp.admin.inc:218
+msgid "You can't post images until !imagefield module is installed."
+msgstr ""
+
+#: vkxp.module:9;12
+msgid "Vkontakte CrossPoster module allows users to post nodes automatically to social network vkontakte.ru."
+msgstr ""
+
+#: vkxp.module:13
+msgid "It requires creating standalone application http://vkontakte.ru/editapp?act=create&site=1"
+msgstr ""
+
+#: vkxp.module:14
+msgid "After creating application you should go to module settings page and put there secret code and application ID"
+msgstr ""
+
+#: vkxp.module:97
+msgid "VKontakte crossposter"
+msgstr ""
+
+#: vkxp.module:104
+msgid "Post this node to vkontakte.ru"
+msgstr ""
+
+#: vkxp.module:158
+msgid "Vkontakte upload server was not revieved. Message was not posted"
+msgstr ""
+
+#: vkxp.module:285
+msgid "Data was successfully posted to vkontakte.ru"
+msgstr ""
+
+#: vkxp.module:288
+msgid "Data was not posted to vkontakte.ru."
+msgstr ""
+
+#: vkxp.module:62
+msgid "administer vkontakte crossposter"
+msgstr ""
+
+#: vkxp.module:62
+msgid "post to vkontakte"
+msgstr ""
+
+#: vkxp.module:25 vkxp.info:0
+msgid "VKontakte CrossPoster"
+msgstr ""
+
+#: vkxp.module:38
+msgid "Node settings"
+msgstr ""
+
+#: vkxp.module:47
+msgid "Images settings"
+msgstr ""
+
+#: (duplicate) vkxp.install:18 
+msgid "cURL Support for VKontakte CrossPoster"
+msgstr ""
+
+#: (duplicate) vkxp.install:19 
+msgid "VKontakte CrossPoster requires <a href=\"http://php.net/manual/en/book.curl.php\">cURL support in PHP</a> to function fully.  Without this, contents will not be posted to vkontakte."
+msgstr ""
+

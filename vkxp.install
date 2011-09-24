@@ -2,10 +2,10 @@
 
 /**
  * @file
- * Install, update and uninstall functions for the vkxp module.
+ * Requirements and uninstall functions for the vkxp module.
  */
  
- function vkxp_requirements($phase) {
+function vkxp_requirements($phase) {
   $requirements = array();
 
   // Ensure translations don't break at install time.
