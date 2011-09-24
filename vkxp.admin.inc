@@ -10,12 +10,11 @@
  * Return form with main settings
  */
 function vkxp_admin_main_settings() {
-
   // Process request from vk
   if ($_GET['code']){
     $params = array();
-    $params['client_id'] = variable_get('vkxp_app_id', 0);
-    $params['client_secret'] = variable_get('vkxp_app_secret', 0);
+    $params['client_id'] = trim(variable_get('vkxp_app_id', 0));
+    $params['client_secret'] = trim(variable_get('vkxp_app_secret', 0));
     $params['code'] = $_GET['code'];
     $result = theme('vkxp_query', '', $params, 'https://api.vkontakte.ru/oauth/access_token');
     if ($result['access_token']) {
@@ -23,7 +22,7 @@ function vkxp_admin_main_settings() {
       drupal_set_message(t('Access token was recieved from vkontakte. Now you may post your nodes there.'));
     }
     else {
-      drupal_set_message(t('Access token was not recieved from vkontakte. Please, check your app ID and app secret'), 'warning');
+      drupal_set_message(t('Access token was not recieved from vkontakte. Error: !error', array('!error' => $result['error_description'])), 'warning');
     }
   }
 
@@ -42,9 +41,19 @@ function vkxp_admin_main_settings() {
 
   $form['vkxp_main']['vkxp_group_id'] = array(
     '#type' => 'textfield',
-    '#title' => t('Group ID'),
+    '#title' => t('Owner ID'),
     '#required' => true,
     '#default_value' => variable_get('vkxp_group_id', ''),
+  );
+
+  $form['vkxp_main']['vkxp_wall_owner'] = array(
+    '#type' => 'select',
+    '#title' => t('Select owner type'),
+    '#options' => array(
+      'group' => t('Group'),
+      'user' => t('User'),
+    ),
+    '#default_value' => variable_get('vkxp_wall_owner', 'group'),
   );
 
   $form['vkxp_main']['vkxp_app_id'] = array(
@@ -93,6 +102,10 @@ function vkxp_admin_main_settings() {
 function vkxp_admin_main_settings_submit($form, &$form_state) {
   $values = $form_state['values'];
   if ($values['vkxp_app_id']) {
+    variable_set('vkxp_app_secret', $values['vkxp_app_secret']);
+    variable_set('vkxp_app_id', trim($values['vkxp_app_id']));
+    variable_set('vkxp_group_id', trim($values['vkxp_group_id']));
+    variable_set('vkxp_wall_owner', $values['vkxp_wall_owner']);
     $params = array();
     $params['client_id'] = trim($values['vkxp_app_id']);
     $params['scope'] = 'wall,groups,photos,offline';

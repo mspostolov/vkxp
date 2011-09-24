@@ -148,10 +148,13 @@ function vkxp_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
         
         // Post node to vk
         $upload_url = _vkxp_get_upload_server();
+        drupal_set_message($upload_url);
         if ($upload_url) {          
           $images = _vkxp_get_node_images($node);
           $image_ids = _vkxp_upload_images($upload_url, $images);
+
           $response = _vkxp_post_to_wall($message, $image_ids, $url);
+          drupal_set_message(print_r($response, 1));
           _vkxp_drupal_set_message($response);
         }
         else {
@@ -208,7 +211,12 @@ function _vkxp_get_selected_node_types() {
  */
 function _vkxp_get_upload_server() {
   $params = array();
-  $params['gid'] = variable_get('vkxp_group_id', '');
+  if (variable_get('vkxp_wall_owner', 'group') == 'group') {
+    $params['gid'] = variable_get('vkxp_group_id', '');
+  }
+  else {
+    $params['uid'] = variable_get('vkxp_group_id', '');
+  }
   $params['access_token'] = variable_get('vkxp_access_token', '');
   $result = theme('vkxp_query', 'photos.getWallUploadServer', $params);
   if ($result['response']['upload_url']) {
@@ -236,7 +244,12 @@ function _vkxp_upload_images($upload_url, $images) {
       $params['server']       = $upload_result['server'];
       $params['photo']        = $upload_result['photo'];
       $params['hash']         = $upload_result['hash'];
-      $params['gid']          = variable_get('vkxp_group_id', '');
+      if (variable_get('vkxp_wall_owner', 'group') == 'group') {
+        $params['gid'] = variable_get('vkxp_group_id', '');
+      }
+      else {
+        $params['uid'] = variable_get('vkxp_group_id', '');
+      }
       $save_result            = theme('vkxp_query', 'photos.saveWallPhoto', $params);
       // If image was successfully saved it returns photo ID in format 'photoXXXXXXX_XXXXXXX'
       if ($save_result['response'][0]['id']) {
@@ -259,9 +272,14 @@ function _vkxp_upload_images($upload_url, $images) {
  */
 function _vkxp_post_to_wall($message, $images, $url) {
   $params = array();
-  $params['owner_id'] = '-' . variable_get('vkxp_group_id', '');
+  if (variable_get('vkxp_wall_owner', 'group') == 'group') {
+    $params['owner_id'] = '-' . variable_get('vkxp_group_id', '');
+    $params['from_group'] = variable_get('vkxp_official', 1);
+  }
+  else {
+    $params['owner_id'] = variable_get('vkxp_group_id', '');
+  }
   $params['message'] = $message;
-  $params['from_group'] = variable_get('vkxp_official', 1);
   $params['attachments'] = $images;
   if (variable_get('vkxp_add_link', 0)) {
     if ($images) {
