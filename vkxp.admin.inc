@@ -56,6 +56,13 @@ function vkxp_admin_main_settings() {
     '#default_value' => variable_get('vkxp_app_secret', ''),
   );
 
+  $form['vkxp_main']['vkxp_enabled_default'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Checkbox "Post this node to vkontakte.ru" are checked by default'),
+    '#default_value' => variable_get('vkxp_enabled_default', 0),
+    '#description' => t('Check this if you want checkbox "Post this node to vkontakte.ru" in node form was checked by default')
+  );
+
   $form['vkxp_main']['vkxp_official'] = array(
     '#type' => 'checkbox',
     '#title' => t('Write from group name'),
@@ -69,6 +76,8 @@ function vkxp_admin_main_settings() {
     '#default_value' => variable_get('vkxp_add_link', 0),
     '#description' => t('Check this if you want to post node url on vk wall'),
   );
+
+  $form['#submit'][] = 'vkxp_admin_main_settings_submit';
 
   return system_settings_form($form);
 }
@@ -114,6 +123,18 @@ function vkxp_admin_node_settings() {
   $form['vkxp_body'] = array(
     '#type' => 'fieldset',
     '#title' => t('Messages'),
+  );
+
+  $form['vkxp_body']['vkxp_post_object'] = array(
+    '#type' => 'select',
+    '#title' => t('Message body'),
+    '#description' => t('Select what to post as wall message'),
+    '#options' => array(
+      'title' => t('Node title'),
+      'body' => t('Node body'),
+      'title_body' => t('Node title and node body'),
+    ),
+    '#default_value' => variable_get('vkxp_post_object', 'body'),
   );
 
   $form['vkxp_body']['vkxp_cut_body'] = array(
