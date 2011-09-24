@@ -1,2 +1,3 @@
 name = VKontakte CrossPoster
+descriptions = Allows to send data automatically to vkontakte.ru
 core = 6.x

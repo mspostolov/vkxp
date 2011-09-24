@@ -6,24 +6,19 @@
  */
 function vkxp_admin_main_settings() {
 
-  //process code request
+  // Process request from vk
   if ($_GET['code']){
     $params = array();
     $params['client_id'] = variable_get('vkxp_app_id', 0);
     $params['client_secret'] = variable_get('vkxp_app_secret', 0);
     $params['code'] = $_GET['code'];
-    $data = http_build_query($params, '', '&');
-    $ch = curl_init();
-    curl_setopt ($ch, CURLOPT_URL, 'https://api.vkontakte.ru/oauth/access_token');
-    curl_setopt ($ch, CURLOPT_POST, 1);
-    curl_setopt ($ch, CURLOPT_POSTFIELDS, $data);
-    curl_setopt ($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
-    curl_setopt ($ch, CURLOPT_RETURNTRANSFER, 1);
-    $result = curl_exec($ch);
-    curl_close($ch);
-    $json_result = json_decode($result, true);
-    if ($json_result['access_token']) {
-      variable_set('vkxp_access_token', $json_result['access_token']);
+    $result = theme('vkxp_query', '', $params, 'https://api.vkontakte.ru/oauth/access_token');
+    if ($result['access_token']) {
+      variable_set('vkxp_access_token', $result['access_token']);
+      drupal_set_message(t('Access token was recieved from vkontakte. Now you may post your nodes there.'));
+    }
+    else {
+      drupal_set_message(t('Access token was not recieved from vkontakte. Please, check your app ID and app secret'), 'warning');
     }
   }
 
@@ -65,27 +60,25 @@ function vkxp_admin_main_settings() {
     '#type' => 'checkbox',
     '#title' => t('Write from group name'),
     '#default_value' => variable_get('vkxp_official', 1),
+    '#description' => t('Check this if you want to post messages from group name'),
+  );
+  
+  $form['vkxp_main']['vkxp_add_link'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Add link on wall to posted page'),
+    '#default_value' => variable_get('vkxp_add_link', 0),
+    '#description' => t('Check this if you want to post node url on vk wall'),
   );
 
-  $form = system_settings_form($form);
-
-  $form['reset'] = array(
-    '#type' => 'submit',
-    '#value' => t('Reset cookies'),
-  );
-
-  $form['#submit'][] = 'vkxp_admin_settings_submit';
-
-  return $form;
+  return system_settings_form($form);
 }
 
 /**
- * Submit function for vkxp main settings
+ * Submit function for vkxp main settings form
  */
-function vkxp_admin_settings_submit($form, &$form_state) {
+function vkxp_admin_main_settings_submit($form, &$form_state) {
   $values = $form_state['values'];
   if ($values['vkxp_app_id']) {
-    variable_set('vkxp_user_id', $values['vkxp_app_id']);
     $params = array();
     $params['client_id'] = trim($values['vkxp_app_id']);
     $params['scope'] = 'wall,groups,photos,offline';
