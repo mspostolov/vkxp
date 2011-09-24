@@ -91,9 +91,12 @@ function vkxp_admin_main_settings() {
     '#description' => t('Check this if you want to post node url on vk wall'),
   );
 
-  $form['#submit'][] = 'vkxp_admin_main_settings_submit';
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save settings'),
+  );
 
-  return system_settings_form($form);
+  return $form;
 }
 
 /**
@@ -101,11 +104,16 @@ function vkxp_admin_main_settings() {
  */
 function vkxp_admin_main_settings_submit($form, &$form_state) {
   $values = $form_state['values'];
-  if ($values['vkxp_app_id']) {
-    variable_set('vkxp_app_secret', $values['vkxp_app_secret']);
+  variable_set('vkxp_enable'         , $values['vkxp_enable']);
+  variable_set('vkxp_group_id'       , trim($values['vkxp_group_id']));
+  variable_set('vkxp_wall_owner'     , $values['vkxp_wall_owner']);
+  variable_set('vkxp_enabled_default', $values['vkxp_enabled_default']);
+  variable_set('vkxp_official'       , $values['vkxp_official']);
+  variable_set('vkxp_add_link'       , $values['vkxp_add_link']);
+
+  if (variable_get('vkxp_app_id', 0) != $values['vkxp_app_id'] || variable_get('vkxp_app_secret', 0) != $values['vkxp_app_secret']) {
     variable_set('vkxp_app_id', trim($values['vkxp_app_id']));
-    variable_set('vkxp_group_id', trim($values['vkxp_group_id']));
-    variable_set('vkxp_wall_owner', $values['vkxp_wall_owner']);
+    variable_set('vkxp_app_secret', trim($values['vkxp_app_secret']));
     $params = array();
     $params['client_id'] = trim($values['vkxp_app_id']);
     $params['scope'] = 'wall,groups,photos,offline';
@@ -116,6 +124,8 @@ function vkxp_admin_main_settings_submit($form, &$form_state) {
     $url = 'http://api.vkontakte.ru/oauth/authorize?'. $data;
     drupal_goto($url);
   }
+
+  drupal_set_message(t('The configuration options have been saved.'));
 }
 
 /**
