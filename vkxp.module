@@ -104,6 +104,11 @@ function _vkxp_process_node_form(&$form) {
       '#title' => t('Post this node to vkontakte.ru'),
       '#default_value' => variable_get('vkxp_enabled_default', 0)
     );
+    if (!function_exists('curl_init')) {
+      $form['vkxp']['vkxp_post_this_node']['#disabled'] = TRUE;
+      $form['vkxp']['vkxp_post_this_node']['#value'] = 0;
+      $form['vkxp']['vkxp_post_this_node']['#description'] = t("You can't crosspost nodes until cURL library is not installed on your server");
+    }
   }
 }
 
@@ -151,11 +156,7 @@ function vkxp_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
         if ($upload_url) {          
           $images = _vkxp_get_node_images($node);
           $image_ids = _vkxp_upload_images($upload_url, $images);
-          $response = _vkxp_post_to_wall($message, $image_ids, $url);
-          _vkxp_drupal_set_message($response);
-        }
-        else {
-          drupal_set_message(t('Vkontakte upload server was not revieved. Message was not posted'));
+          _vkxp_post_to_wall($message, $image_ids, $url, $node);
         }
       }
     }
@@ -219,6 +220,9 @@ function _vkxp_get_upload_server() {
   if ($result['response']['upload_url']) {
     return $result['response']['upload_url'];
   }
+  elseif ($result['error']) {
+    _vkxp_watchdog(array('text' => t('Unable to recieve upload server. Error: !error', array('!error' => $result['error']['error_msg'])), 'severity' => 'error'));
+  }
   return FALSE;
 }
 
@@ -267,7 +271,7 @@ function _vkxp_upload_images($upload_url, $images) {
  * @param  $url: absolute link to posted page
  * @return array: server response
  */
-function _vkxp_post_to_wall($message, $images, $url) {
+function _vkxp_post_to_wall($message, $images, $url, $node) {
   $params = array();
   if (variable_get('vkxp_wall_owner', 'group') == 'group') {
     $params['owner_id'] = '-' . variable_get('vkxp_group_id', '');
@@ -288,18 +292,29 @@ function _vkxp_post_to_wall($message, $images, $url) {
   }
   $params['access_token'] = variable_get('vkxp_access_token', '');
   $result = theme('vkxp_query', 'wall.post', $params);
-  return $result['response'];
+  if ($result['response']['post_id'] || $result['response']['processing']) {
+    _vkxp_watchdog(array('text' => t('Node "!title"was successfully posted to vkontakte.ru', array('!title' => $node->title)), 'severity' => 'status'), l(t('View'), 'node/' . $node->nid));
+  }
+  elseif ($result['error']) {
+    _vkxp_watchdog(array('text' => t('Node was not posted to vkontakte.ru. Error: !error', array('!error' => $result['error']['error_msg'])), 'severity' =>'error'), l($node->title, 'node/' . $node->nid));
+  }
 }
 
 /**
- * Set drupal message after node posting depends on server response
- * @param  $response: array with server response
+ * Log messages and print it on the screen
+ * @param $message: array with message and it severity
+ * @param $link: link to view node
  */
-function _vkxp_drupal_set_message($response) {
-  if ($response['post_id'] || $response['processing']) {
-    drupal_set_message(t('Data was successfully posted to vkontakte.ru'));
+function _vkxp_watchdog($message, $link = NULL) {
+  drupal_set_message($message['text'], $message['severity']);
+  if ($message['severity'] == 'status') {
+    $severity = WATCHDOG_INFO;
+  }
+  elseif ($message['severity'] == 'warning') {
+    $severity = WATCHDOG_WARNING;
   }
   else {
-    drupal_set_message(t('Data was not posted to vkontakte.ru.'), 'warning');
+    $severity = WATCHDOG_ERROR;
   }
+  watchdog('vkxp', $message['text'], array(), $severity, $link);
 }

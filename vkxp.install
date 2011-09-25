@@ -4,7 +4,10 @@
  * @file
  * Requirements and uninstall functions for the vkxp module.
  */
- 
+
+/**
+ * Implementation of hook_requirements()
+ */
 function vkxp_requirements($phase) {
   $requirements = array();
 
@@ -25,7 +28,7 @@ function vkxp_requirements($phase) {
 }
 
 /**
- * Implements hook_uninstall().
+ * Implements hook_uninstall()
  */
 function vkxp_uninstall() {
   db_query("DELETE FROM {variable} WHERE name LIKE 'vkxp_%'");

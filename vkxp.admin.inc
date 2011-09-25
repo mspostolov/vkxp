@@ -19,11 +19,14 @@ function vkxp_admin_main_settings() {
     $result = theme('vkxp_query', '', $params, 'https://api.vkontakte.ru/oauth/access_token');
     if ($result['access_token']) {
       variable_set('vkxp_access_token', $result['access_token']);
-      drupal_set_message(t('Access token was recieved from vkontakte. Now you may post your nodes there.'));
+      _vkxp_watchdog(array('text' => t('Access token was recieved from vkontakte. Now you may post your nodes there.'), 'severity' => 'status'));
     }
     else {
-      drupal_set_message(t('Access token was not recieved from vkontakte. Error: !error', array('!error' => $result['error_description'])), 'warning');
+      _vkxp_watchdog(array('text' => t('Access token was not recieved from vkontakte. Error: !error (!error_description)', array('!error' => $result['error'], '!error_description' => $result['error_description'])), 'severity' =>  'error'));
     }
+  }
+  elseif ($_GET['error']) {
+    _vkxp_watchdog(array('text' => t('Access code was not recieved from vkontakte. Error: !error (!error_description)', array('!error' => $_GET['error'], '!error_description'=> $_GET['error_description'])), 'severity' => 'error'));
   }
 
   $form = array();
@@ -104,6 +107,8 @@ function vkxp_admin_main_settings() {
  */
 function vkxp_admin_main_settings_submit($form, &$form_state) {
   $values = $form_state['values'];
+
+  // Save values
   variable_set('vkxp_enable'         , $values['vkxp_enable']);
   variable_set('vkxp_group_id'       , trim($values['vkxp_group_id']));
   variable_set('vkxp_wall_owner'     , $values['vkxp_wall_owner']);
@@ -111,6 +116,7 @@ function vkxp_admin_main_settings_submit($form, &$form_state) {
   variable_set('vkxp_official'       , $values['vkxp_official']);
   variable_set('vkxp_add_link'       , $values['vkxp_add_link']);
 
+  // If application id or application secret was changed we should get new access token
   if (variable_get('vkxp_app_id', 0) != $values['vkxp_app_id'] || variable_get('vkxp_app_secret', 0) != $values['vkxp_app_secret']) {
     variable_set('vkxp_app_id', trim($values['vkxp_app_id']));
     variable_set('vkxp_app_secret', trim($values['vkxp_app_secret']));
