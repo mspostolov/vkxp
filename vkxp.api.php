@@ -15,7 +15,7 @@
  */
 function hook_vkxp_query_alter(&$query) {
   if ($query['method'] == 'wall.post') {
-    $params['message'] .= "\n" . t('Attachments disabled');
-    unset($params['attachments']);
+    $query['params']['message'] .= "\n" . t('Attachments disabled');
+    unset($query['params']['attachments']);
   }
 }

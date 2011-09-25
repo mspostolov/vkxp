@@ -22,19 +22,13 @@ Usage
 When creating or editing node, just check "Post this node to vkontakte.ru" and data will be automatically sent to vkontakte.ru
 
 
-Theme
-=====
+External usage
+==============
 
 If you are authorized on vk server (if you get access token after 5th step of installation) you may make queries to vk api using this function:
 
-theme('vkxp_query', $api_method, $post_fields);
+vkxp_query($api_method, $post_fields, $requert_url);
 
 About VK api you can read here http://vkontakte.ru/developers.php#devstep2
 
-Example (get wall upload server)
----------------------------------
-
-$params = array();
-$params['gid'] = variable_get('vkxp_group_id', '');
-$params['access_token'] = variable_get('vkxp_access_token', '');
-$result = theme('vkxp_query', 'photos.getWallUploadServer', $params);
+Also it is possible to change this query using hook_vkxp_query_alter(). Read about it in vkxp.api.php
