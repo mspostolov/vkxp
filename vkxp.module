@@ -63,18 +63,6 @@ function vkxp_perm() {
 }
 
 /**
- * Implementation of hook_theme()
- */
-function vkxp_theme() {
-  return array(
-    'vkxp_query' => array(
-      'arguments' => array('method' => '', 'params' => array(), 'request_url' => 'https://api.vkontakte.ru/method/'),
-      'file' => 'vkxp.theme.inc',
-    ),
-  );
-}
-
-/**
  * Implementation of hook_form_alter()
  */
 function vkxp_form_alter(&$form, &$form_state, $form_id) {
@@ -164,6 +152,28 @@ function vkxp_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
 }
 
 /**
+ * Function makes query to vkontakte.ru
+ * Allows using hook_vkxp_query_alter() for altering query params
+ */
+function vkxp_query($method, $params, $request_url = 'https://api.vkontakte.ru/method/') {
+  $query = array();
+  $query['method'] = $method;
+  $query['params'] = $params;
+  $query['request_url'] = $request_url;
+  drupal_alter('vkxp_query', $query);
+  // cURL request
+  $curl = curl_init();
+  curl_setopt ($curl, CURLOPT_URL, $query['request_url'] . $query['method']);
+  curl_setopt ($curl, CURLOPT_POST, 1);
+  curl_setopt ($curl, CURLOPT_POSTFIELDS, $query['params']);
+  curl_setopt ($curl, CURLOPT_SSL_VERIFYPEER, FALSE);
+  curl_setopt ($curl, CURLOPT_RETURNTRANSFER, 1);
+  $result = curl_exec($curl);
+  curl_close($curl);
+  return json_decode($result, true);
+}
+
+/**
  * Get images realpath from selected imagefield
  * @param $node: node object
  * @return array: array with images for uploading
@@ -216,7 +226,7 @@ function _vkxp_get_upload_server() {
     $params['uid'] = variable_get('vkxp_group_id', '');
   }
   $params['access_token'] = variable_get('vkxp_access_token', '');
-  $result = theme('vkxp_query', 'photos.getWallUploadServer', $params);
+  $result = vkxp_query('photos.getWallUploadServer', $params);
   if ($result['response']['upload_url']) {
     return $result['response']['upload_url'];
   }
@@ -237,7 +247,7 @@ function _vkxp_upload_images($upload_url, $images) {
   $image_ids = array();
   foreach ($images as $image) {
     // Upload photo
-    $upload_result = theme('vkxp_query', '', array('photo' => $image), $upload_url);
+    $upload_result = vkxp_query('', array('photo' => $image), $upload_url);
     // If photo was uploaded it should be saved
     if ($upload_result['server'] && $upload_result['photo'] && $upload_result['hash']) {
       $params = array();
@@ -251,7 +261,7 @@ function _vkxp_upload_images($upload_url, $images) {
       else {
         $params['uid'] = variable_get('vkxp_group_id', '');
       }
-      $save_result            = theme('vkxp_query', 'photos.saveWallPhoto', $params);
+      $save_result            = vkxp_query('photos.saveWallPhoto', $params);
       // If image was successfully saved it returns photo ID in format 'photoXXXXXXX_XXXXXXX'
       if ($save_result['response'][0]['id']) {
         $image_ids[] = $save_result['response'][0]['id'];
@@ -291,7 +301,7 @@ function _vkxp_post_to_wall($message, $images, $url, $node) {
     }
   }
   $params['access_token'] = variable_get('vkxp_access_token', '');
-  $result = theme('vkxp_query', 'wall.post', $params);
+  $result = vkxp_query( 'wall.post', $params);
   if ($result['response']['post_id'] || $result['response']['processing']) {
     _vkxp_watchdog(array('text' => t('Node "!title"was successfully posted to vkontakte.ru', array('!title' => $node->title)), 'severity' => 'status'), l(t('View'), 'node/' . $node->nid));
   }
