@@ -16,7 +16,7 @@ function vkxp_admin_main_settings() {
     $params['client_id'] = trim(variable_get('vkxp_app_id', 0));
     $params['client_secret'] = trim(variable_get('vkxp_app_secret', 0));
     $params['code'] = $_GET['code'];
-    $result = theme('vkxp_query', '', $params, 'https://api.vkontakte.ru/oauth/access_token');
+    $result = vkxp_query('', $params, 'https://api.vkontakte.ru/oauth/access_token');
     if ($result['access_token']) {
       variable_set('vkxp_access_token', $result['access_token']);
       _vkxp_watchdog(array('text' => t('Access token was recieved from vkontakte. Now you may post your nodes there.'), 'severity' => 'status'));
