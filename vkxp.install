@@ -23,6 +23,13 @@ function vkxp_requirements($phase) {
         'severity' => REQUIREMENT_ERROR,
       );
     }
+    else {
+      $requirements['vkxp_curl'] = array(
+        'title' => $t('cURL Support for VKontakte CrossPoster'),
+        'value' => $t('cURL enabled'),
+        'severity' => REQUIREMENT_OK,
+      );
+    }
   }
   return $requirements;
 }
