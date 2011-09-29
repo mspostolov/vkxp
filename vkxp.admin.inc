@@ -196,7 +196,8 @@ function vkxp_admin_images_settings() {
   // Get node types that should be crossposted
   $selected_node_types = _vkxp_get_selected_node_types();
   if (!$selected_node_types) {
-    return t('Please, select content types to see their image fiels');
+    $form['imagefield'] = array('#value' => t('Please, select content types to see their image fiels'));
+    return $form;
   }
 
   if (module_exists('imagefield')) {
@@ -208,7 +209,7 @@ function vkxp_admin_images_settings() {
       $node_types = node_get_types('names');
       $form['vkxp_node_type_'. $node_type] = array(
         '#type' => 'fieldset',
-        '#title' => t($node_types[$node_type]),
+        '#title' => $node_types[$node_type],
       );
 
       // If node type has cck fields we should find imagefield
@@ -244,7 +245,8 @@ function vkxp_admin_images_settings() {
     }
   }
   else {
-    return t("You can't post images until !imagefield module is installed.", array('!imagefield' => '<a href = "http://drupal.org/project/imagefield">imagefield</a>'));
+    $form['imagefield'] = array('#value' => t("You can't post images until !imagefield module is installed.", array('!imagefield' => '<a href = "http://drupal.org/project/imagefield">imagefield</a>')));
+    return $form;
   }
 
   $form = system_settings_form($form);
