@@ -11,7 +11,7 @@
  */
 function vkxp_admin_main_settings() {
   // Process request from vk
-  if ($_GET['code']){
+  if ($_GET['code']) {
     $params = array();
     $params['client_id'] = trim(variable_get('vkxp_app_id', 0));
     $params['client_secret'] = trim(variable_get('vkxp_app_secret', 0));

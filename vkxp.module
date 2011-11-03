@@ -8,7 +8,7 @@ function vkxp_help($path, $arg) {
     case 'admin/settings/vkxp':
       return t('Vkontakte CrossPoster module allows users to post nodes automatically to social network vkontakte.ru.');
     case 'admin/help#vkxp':
-      $output = '';
+      $output  = '';
       $output .= '<p>' . t('Vkontakte CrossPoster module allows users to post nodes automatically to social network vkontakte.ru.') . '</p>';
       $output .= '<p>' . t('It requires creating standalone application http://vkontakte.ru/editapp?act=create&site=1') . '</p>';
       $output .= '<p>' . t('After creating application you should go to module settings page and put there secret code and application ID') . '</p>';
@@ -138,6 +138,9 @@ function vkxp_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
             $message = drupal_substr($message, 0, $length - 3) . '...';
           }
         }
+
+        // Decode special symbols
+        $message = htmlspecialchars_decode($message, $node->filter);
         
         // Post node to vk
         $upload_url = _vkxp_get_upload_server();

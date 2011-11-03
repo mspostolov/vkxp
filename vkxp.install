@@ -35,7 +35,7 @@ function vkxp_requirements($phase) {
 }
 
 /**
- * Implements hook_uninstall()
+ * Implementation of hook_uninstall()
  */
 function vkxp_uninstall() {
   db_query("DELETE FROM {variable} WHERE name LIKE 'vkxp_%'");
