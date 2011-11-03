@@ -144,7 +144,7 @@ function vkxp_admin_main_settings_submit($form, &$form_state) {
     $params['redirect_uri'] = url('admin/settings/vkxp/main', array('absolute' => TRUE));
     $params['response_type'] = 'code';
     $data = http_build_query($params, '', '&');
-    $url = 'http://api.vkontakte.ru/oauth/authorize?'. $data;
+    $url = 'http://api.vkontakte.ru/oauth/authorize?' . $data;
     drupal_goto($url);
   }
 
@@ -224,7 +224,7 @@ function vkxp_admin_images_settings() {
 
       // Build fieldset for every selected node type
       $node_types = node_get_types('names');
-      $form['vkxp_node_type_'. $node_type] = array(
+      $form['vkxp_node_type_' . $node_type] = array(
         '#type' => 'fieldset',
         '#title' => $node_types[$node_type],
       );
@@ -241,23 +241,23 @@ function vkxp_admin_images_settings() {
 
       // If imagefield for this node type found - build settings form for that
       if ($image_fields[$node_type]) {
-        $form['vkxp_node_type_'. $node_type][$node_type .'_image_amount'] = array(
+        $form['vkxp_node_type_' . $node_type][$node_type . '_image_amount'] = array(
           '#type' => 'select',
           '#title' => t('Select amount of images'),
           '#options' => drupal_map_assoc(array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)),
-          '#default_value' => variable_get($node_type .'_image_amount', 0),
+          '#default_value' => variable_get($node_type . '_image_amount', 0),
           '#description' => t('Amount of images which will be posted to vkontakte.ru'),
         );
-        $form['vkxp_node_type_'. $node_type][$node_type .'_image_field'] = array(
+        $form['vkxp_node_type_' . $node_type][$node_type . '_image_field'] = array(
           '#type' => 'select',
           '#title' => t('Select imagefield'),
           '#options' => $image_fields[$node_type],
-          '#default_value' => variable_get($node_type .'_image_field', ''),
+          '#default_value' => variable_get($node_type . '_image_field', ''),
           '#description' => t('Selected field will be posted with message to vkontakte.ru'),
         );
       }
       else {
-        $form['vkxp_node_type_'. $node_type]['empty_value'] = array('#value' => t('This node types does not contain image fields'));
+        $form['vkxp_node_type_' . $node_type]['empty_value'] = array('#value' => t('This node types does not contain image fields'));
       }
     }
   }

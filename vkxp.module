@@ -93,8 +93,8 @@ function _vkxp_process_node_form(&$form) {
       '#default_value' => variable_get('vkxp_enabled_default', 0)
     );
     if (!function_exists('curl_init')) {
-      $form['vkxp']['vkxp_post_this_node']['#disabled'] = TRUE;
-      $form['vkxp']['vkxp_post_this_node']['#value'] = 0;
+      $form['vkxp']['vkxp_post_this_node']['#disabled']    = TRUE;
+      $form['vkxp']['vkxp_post_this_node']['#value']       = 0;
       $form['vkxp']['vkxp_post_this_node']['#description'] = t("You can't crosspost nodes until cURL library is not installed on your server");
     }
   }
@@ -118,7 +118,7 @@ function vkxp_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
         }
         
         // Get node url
-        $url = url('node/'. $node->nid, array('absolute' => TRUE));
+        $url = url('node/' . $node->nid, array('absolute' => TRUE));
 
         // Get message from node
         if (variable_get('vkxp_post_object', 'body') == 'body') {
@@ -128,7 +128,7 @@ function vkxp_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
           $message = trim(check_plain($node->title));
         }
         else {
-          $message = trim(check_plain($node->title)) . "\n" .trim(strip_tags($node->body));
+          $message = trim(check_plain($node->title)) . "\n\n" . trim(strip_tags($node->body));
         }
 
         // Get body and trim if needed
@@ -180,9 +180,9 @@ function vkxp_query($method, $params, $request_url = 'https://api.vkontakte.ru/m
  */
 function _vkxp_get_node_images($node) {
   $images = array();
-  $image_amount = variable_get($node->type .'_image_amount', 0);
+  $image_amount = variable_get($node->type . '_image_amount', 0);
   if ($image_amount) {
-    $field = variable_get($node->type .'_image_field', '');
+    $field = variable_get($node->type . '_image_field', '');
     if ($field && isset($node->$field)) {
       $i = 0;
       foreach ($node->$field as $image) {
@@ -190,7 +190,7 @@ function _vkxp_get_node_images($node) {
           if ($i++ == $image_amount) {
             break;
           }
-          $images[] = '@'. realpath($image['filepath']);
+          $images[] = '@' . realpath($image['filepath']);
         }
       }
     }
@@ -231,7 +231,10 @@ function _vkxp_get_upload_server() {
     return $result['response']['upload_url'];
   }
   elseif ($result['error']) {
-    _vkxp_watchdog(array('text' => t('Unable to recieve upload server. Error: !error', array('!error' => $result['error']['error_msg'])), 'severity' => 'error'));
+    _vkxp_watchdog(
+      array('text' => t('Unable to recieve upload server. Error: !error',
+      array('!error' => $result['error']['error_msg'])), 'severity' => 'error')
+    );
   }
   return FALSE;
 }
@@ -303,10 +306,17 @@ function _vkxp_post_to_wall($message, $images, $url, $node) {
   $params['access_token'] = variable_get('vkxp_access_token', '');
   $result = vkxp_query( 'wall.post', $params);
   if ($result['response']['post_id'] || $result['response']['processing']) {
-    _vkxp_watchdog(array('text' => t('Node "!title"was successfully posted to vkontakte.ru', array('!title' => $node->title)), 'severity' => 'status'), l(t('View'), 'node/' . $node->nid));
+    _vkxp_watchdog(
+      array('text' => t('Node "!title"was successfully posted to vkontakte.ru',
+      array('!title' => $node->title)), 'severity' => 'status'), l(t('View'), 'node/' . $node->nid)
+    );
   }
   elseif ($result['error']) {
-    _vkxp_watchdog(array('text' => t('Node was not posted to vkontakte.ru. Error: !error', array('!error' => $result['error']['error_msg'])), 'severity' =>'error'), l($node->title, 'node/' . $node->nid));
+    _vkxp_watchdog(
+      array('text' => t('Node was not posted to vkontakte.ru. Error: !error',
+      array('!error' => $result['error']['error_msg'])), 'severity' =>'error'),
+      l($node->title, 'node/' . $node->nid)
+    );
   }
 }
 
