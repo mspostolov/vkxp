@@ -19,14 +19,23 @@ function vkxp_admin_main_settings() {
     $result = vkxp_query('', $params, 'https://api.vkontakte.ru/oauth/access_token');
     if ($result['access_token']) {
       variable_set('vkxp_access_token', $result['access_token']);
-      _vkxp_watchdog(array('text' => t('Access token was recieved from vkontakte. Now you may post your nodes there.'), 'severity' => 'status'));
+      _vkxp_watchdog(
+        array('text' => t('Access token was recieved from vkontakte. Now you may post your nodes there.'),
+        'severity' => 'status')
+      );
     }
     else {
-      _vkxp_watchdog(array('text' => t('Access token was not recieved from vkontakte. Error: !error (!error_description)', array('!error' => $result['error'], '!error_description' => $result['error_description'])), 'severity' =>  'error'));
+      _vkxp_watchdog(
+        array('text' => t('Access token was not recieved from vkontakte. Error: !error (!error_description)',
+        array('!error' => $result['error'], '!error_description' => $result['error_description'])), 'severity' =>  'error')
+      );
     }
   }
   elseif ($_GET['error']) {
-    _vkxp_watchdog(array('text' => t('Access code was not recieved from vkontakte. Error: !error (!error_description)', array('!error' => $_GET['error'], '!error_description'=> $_GET['error_description'])), 'severity' => 'error'));
+    _vkxp_watchdog(
+      array('text' => t('Access code was not recieved from vkontakte. Error: !error (!error_description)',
+      array('!error' => $_GET['error'], '!error_description'=> $_GET['error_description'])), 'severity' => 'error')
+    );
   }
 
   $form = array();
@@ -99,6 +108,11 @@ function vkxp_admin_main_settings() {
     '#value' => t('Save settings'),
   );
 
+  $form['reset'] = array(
+    '#type' => 'submit',
+    '#value' => t('Recieve new access token'),
+  );
+
   return $form;
 }
 
@@ -117,7 +131,10 @@ function vkxp_admin_main_settings_submit($form, &$form_state) {
   variable_set('vkxp_add_link'       , $values['vkxp_add_link']);
 
   // If application id or application secret was changed we should get new access token
-  if (variable_get('vkxp_app_id', 0) != $values['vkxp_app_id'] || variable_get('vkxp_app_secret', 0) != $values['vkxp_app_secret']) {
+  $app_id_changed = variable_get('vkxp_app_id', 0) != $values['vkxp_app_id'];
+  $secret_changed = variable_get('vkxp_app_secret', 0) != $values['vkxp_app_secret'];
+  $reset_clicked  = $values['op'] == $form['reset']['#value'];
+  if ($app_id_changed || $secret_changed || $reset_clicked) {
     variable_set('vkxp_app_id', trim($values['vkxp_app_id']));
     variable_set('vkxp_app_secret', trim($values['vkxp_app_secret']));
     $params = array();
