@@ -1,3 +1,4 @@
 name = VKontakte CrossPoster
 description = Allows to send data automatically to vkontakte.ru
+package = VK
 core = 6.x
