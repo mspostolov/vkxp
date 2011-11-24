@@ -11,17 +11,19 @@
  */
 function vkxp_admin_main_settings() {
   // Process request from vk
-  if ($_GET['code']) {
+  if (isset($_GET['code'])) {
     $params = array();
     $params['client_id'] = trim(variable_get('vkxp_app_id', 0));
     $params['client_secret'] = trim(variable_get('vkxp_app_secret', 0));
     $params['code'] = $_GET['code'];
     $result = vkxp_query('', $params, 'https://api.vkontakte.ru/oauth/access_token');
-    if ($result['access_token']) {
+    if (isset($result['access_token'])) {
       variable_set('vkxp_access_token', $result['access_token']);
       _vkxp_watchdog(
-        array('text' => t('Access token was recieved from vkontakte. Now you may post your nodes there.'),
-        'severity' => 'status')
+        array(
+          'text' => t('Access token was recieved from vkontakte. Now you may post your nodes there.'),
+          'severity' => 'status'
+        )
       );
     }
     else {
@@ -31,7 +33,7 @@ function vkxp_admin_main_settings() {
       );
     }
   }
-  elseif ($_GET['error']) {
+  elseif (isset($_GET['error'])) {
     _vkxp_watchdog(
       array('text' => t('Access code was not recieved from vkontakte. Error: !error (!error_description)',
       array('!error' => $_GET['error'], '!error_description'=> $_GET['error_description'])), 'severity' => 'error')
@@ -141,7 +143,7 @@ function vkxp_admin_main_settings_submit($form, &$form_state) {
     $params['client_id'] = trim($values['vkxp_app_id']);
     $params['scope'] = 'wall,groups,photos,offline';
     $params['display'] = 'page';
-    $params['redirect_uri'] = url('admin/settings/vkxp/main', array('absolute' => TRUE));
+    $params['redirect_uri'] = url('admin/config/services/vkxp/main', array('absolute' => TRUE));
     $params['response_type'] = 'code';
     $data = http_build_query($params, '', '&');
     $url = 'http://api.vkontakte.ru/oauth/authorize?' . $data;
@@ -163,7 +165,7 @@ function vkxp_admin_node_settings() {
     '#title' => t('Node types'),
   );
 
-  $options = node_get_types('names');
+  $options = node_type_get_names();
   $form['node_types']['vkxp_node_types'] = array(
     '#type' => 'checkboxes',
     '#title' => t('Node types to crosspost'),
@@ -188,18 +190,18 @@ function vkxp_admin_node_settings() {
     '#default_value' => variable_get('vkxp_post_object', 'body'),
   );
 
-  $form['vkxp_body']['vkxp_cut_body'] = array(
+  $form['vkxp_body']['vkxp_cut_message'] = array(
     '#type' => 'checkbox',
     '#title' => t('Cut message'),
-    '#default_value' => variable_get('vkxp_cut_body', 1),
+    '#default_value' => variable_get('vkxp_cut_message', 1),
   );
 
-  $form['vkxp_body']['vkxp_cut_body_length'] = array(
+  $form['vkxp_body']['vkxp_cut_message_length'] = array(
     '#type' => 'textfield',
     '#title' => t('Cut if message length more than'),
     '#field_suffix' => t('symbols'),
     '#size' => 4,
-    '#default_value' => variable_get('vkxp_cut_body_length', 255),
+    '#default_value' => variable_get('vkxp_cut_message_length', 255),
   );
 
   return system_settings_form($form);
@@ -213,60 +215,57 @@ function vkxp_admin_images_settings() {
   // Get node types that should be crossposted
   $selected_node_types = _vkxp_get_selected_node_types();
   if (!$selected_node_types) {
-    $form['imagefield'] = array('#value' => t('Please, select content types to see their image fiels'));
+    $form['image'] = array('#markup' => t('Please, select content types to see their image fiels'));
     return $form;
   }
 
-  if (module_exists('imagefield')) {
+  if (module_exists('image')) {
     $image_fields = array();
-    $content_info = _content_type_info();
+    $fields_info = field_info_fields();
     foreach ($selected_node_types as $node_type) {
 
       // Build fieldset for every selected node type
-      $node_types = node_get_types('names');
+      $node_types = node_type_get_names();
       $form['vkxp_node_type_' . $node_type] = array(
         '#type' => 'fieldset',
         '#title' => $node_types[$node_type],
       );
 
-      // If node type has cck fields we should find imagefield
-      if($content_info['content types'][$node_type]['fields']) {
-        $fields = $content_info['content types'][$node_type]['fields'];
-        foreach ($fields as $field) {
-          if ($field['widget']['module'] == 'imagefield') {
+      foreach ($fields_info as $field) {
+        if ($field['type'] == 'image' && isset($field['bundles']['node'])) {
+          $bundles = $field['bundles']['node'];
+          if (in_array($node_type, $bundles)) {
             $image_fields[$node_type][$field['field_name']] = $field['field_name'];
           }
         }
       }
 
       // If imagefield for this node type found - build settings form for that
-      if ($image_fields[$node_type]) {
-        $form['vkxp_node_type_' . $node_type][$node_type . '_image_amount'] = array(
+      if (isset($image_fields[$node_type])) {
+        $form['vkxp_node_type_' . $node_type]['vkxp_' . $node_type . '_image_amount'] = array(
           '#type' => 'select',
           '#title' => t('Select amount of images'),
           '#options' => drupal_map_assoc(array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)),
-          '#default_value' => variable_get($node_type . '_image_amount', 0),
+          '#default_value' => variable_get('vkxp_' . $node_type . '_image_amount', 0),
           '#description' => t('Amount of images which will be posted to vkontakte.ru'),
         );
-        $form['vkxp_node_type_' . $node_type][$node_type . '_image_field'] = array(
+        $form['vkxp_node_type_' . $node_type]['vkxp_' . $node_type . '_image_field'] = array(
           '#type' => 'select',
           '#title' => t('Select imagefield'),
           '#options' => $image_fields[$node_type],
-          '#default_value' => variable_get($node_type . '_image_field', ''),
+          '#default_value' => variable_get('vkxp_' . $node_type . '_image_field', ''),
           '#description' => t('Selected field will be posted with message to vkontakte.ru'),
         );
       }
       else {
-        $form['vkxp_node_type_' . $node_type]['empty_value'] = array('#value' => t('This node types does not contain image fields'));
+        $form['vkxp_node_type_' . $node_type]['empty_value'] = array('#markup' => t('This node types does not contain image fields'));
       }
     }
   }
   else {
-    $form['imagefield'] = array('#value' => t("You can't post images until !imagefield module is installed.", array('!imagefield' => '<a href = "http://drupal.org/project/imagefield">imagefield</a>')));
+    $form['image'] = array('#markup' => t("You can't post images until IMAGE module is installed."));
     return $form;
   }
 
-  $form = system_settings_form($form);
-  unset($form['buttons']['reset']);
-  return $form;
+  return system_settings_form($form);
 }
