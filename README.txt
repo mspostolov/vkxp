@@ -1,19 +1,17 @@
-***ENGLISH***
-
 Install
 =======
 
-1) Go to http://vkontakte.ru/editapp?act=create&site=1 and create STANDALONE application (not web-site!).
+1) Go to http://vkontakte.ru/apps.php?act=add&site=1 and create web site application
 
 2) Extract module in sites/all/modules directory
 
-3) Go to module settings page /admin/build/modules and enable vkxp (VKontakte CrossPoster) module
+3) Go to module settings page /admin/modules and enable vkxp (VKontakte CrossPoster) module
 
-4) Go to vkxp settings page /admin/settings/vkxp and paste there application ID, application secret key (from application settings page) and group ID (you should be administrator there).
+4) Go to vkxp settings page /admin/config/services/vkxp and paste there application ID, application secret key (from application settings page) and group ID (you should be administrator there).
 
 5) Click 'Save configuration' button and give your application access to your web site
 
-6) Don't forget to select node types (/admin/settings/vkxp/node) and images (/admin/settings/vkxp/images) that should be posted
+6) Don't forget to select node types (/admin/config/services/vkxp/node) and images (/admin/config/services/vkxp/images) that should be posted
 
 
 Usage
