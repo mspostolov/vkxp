@@ -65,7 +65,7 @@ function vkxp_perm() {
 /**
 * Implementation of hook_footer().
 */
-function vkxp_page_build(&$page) {
+function vkxp_footer(&$page) {
   if (variable_get('vkxp_enable', 0)) {
     return '<div id = "vk_api_transport"></div>';
   }
@@ -332,6 +332,19 @@ function _vkxp_post_to_wall($message, $images, $url, $node) {
 }
 
 /**
+ * Write wallpost script in database. It should be shown on first page load.
+ * @param  $nid: nid of node where script should be shown
+ * @param  $script: script code
+ * @return void
+ */
+function _vkxp_add_wallpost_script($nid, $script) {
+  global $user;
+  $notifications = variable_get('vkxp_wallpost_script', '');
+  $notifications[$nid . '_' . $user->uid] = $script;
+  variable_set('vkxp_wallpost_script', $notifications);
+}
+
+/**
  * Show wallpost script on node page
  * @param  $nid: nid of node where script should be shown
  * @return void
@@ -354,7 +367,7 @@ function _vkxp_show_wallpost_script($nid) {
           'from_group'  => $script['from_group'],
           'attachments' => $script['attachments'],
         )
-      ), 'setting');
+      ), 'setting', 'header', FALSE, FALSE);
     drupal_add_js(drupal_get_path('module', 'vkxp') . '/vkxp.js');
 
     // Unset showed script from varialbes
