@@ -256,8 +256,8 @@ function _vkxp_get_node_images($node) {
     $field = variable_get('vkxp_' . $node->type . '_image_field', '');
     if ($field && isset($node->$field)) {
       $i = 0;
-      $node_language = $node->language;
       $image_field = $node->$field;
+      $img_array = array_shift($image_field);
       foreach ($image_field[$node_language] as $image) {
         if ($image['fid']) {
           if ($i++ == $image_amount) {
