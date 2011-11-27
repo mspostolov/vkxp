@@ -65,7 +65,7 @@ function vkxp_perm() {
 /**
 * Implementation of hook_footer().
 */
-function vkxp_footer(&$page) {
+function vkxp_footer() {
   if (variable_get('vkxp_enable', 0)) {
     return '<div id = "vk_api_transport"></div>';
   }
@@ -84,11 +84,11 @@ function vkxp_form_alter(&$form, &$form_state, $form_id) {
 }
 
 /**
- * Implementation of template_preprocess_page().
+ * Implementation of hook_init().
  */
-function vkxp_preprocess_page($vars) {
-  if (isset($vars['node'])) {
-    _vkxp_show_wallpost_script($vars['node']->nid);
+function vkxp_init() {
+  if ($node = menu_get_object()) {
+    _vkxp_show_wallpost_script($node->nid);
   }
 }
 
@@ -358,7 +358,7 @@ function _vkxp_show_wallpost_script($nid) {
     $app_id = variable_get('vkxp_app_id', '');
 
     // Add js
-    drupal_add_js(
+    $vars['scripts'] = drupal_add_js(
       array('vkxp' =>
         array(
           'app_id'      => $app_id,
@@ -368,7 +368,7 @@ function _vkxp_show_wallpost_script($nid) {
           'attachments' => $script['attachments'],
         )
       ), 'setting', 'header', FALSE, FALSE);
-    drupal_add_js(drupal_get_path('module', 'vkxp') . '/vkxp.js');
+    $vars['scripts'] = drupal_add_js(drupal_get_path('module', 'vkxp') . '/vkxp.js');
 
     // Unset showed script from varialbes
     unset($notifications[$key]);

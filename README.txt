@@ -3,9 +3,9 @@
 Install
 =======
 
-1) Go to http://vkontakte.ru/editapp?act=create&site=1 and create STANDALONE application (not web-site!).
+1) Go to http://vkontakte.ru/apps.php?act=add&site=1 and create web site application
 
-2) Extract module in sites/all/modules directory
+2) Extract module into sites/all/modules directory
 
 3) Go to module settings page /admin/build/modules and enable vkxp (VKontakte CrossPoster) module
 

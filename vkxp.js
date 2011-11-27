@@ -1,20 +1,20 @@
 (function($) {
 
-Drupal.behaviors.vkxp = {
-  attach: function (context, settings) {
+Drupal.behaviors.vkxp = function (context) {
+  if (Drupal && Drupal.settings && Drupal.settings.admin_menu) {
 
-    //vk open api methods
+    //VK open api methods
     window.vkAsyncInit = function() {
       VK.init({
-        apiId: settings.vkxp.app_id
+        apiId: Drupal.settings.vkxp.app_id
       });
       VK.Api.call(
         'wall.post',
         {
-          owner_id: settings.vkxp.owner_id,
-          message: settings.vkxp.message,
-          from_group: settings.vkxp.from_group,
-          attachments: settings.vkxp.attachments
+          owner_id: Drupal.settings.vkxp.owner_id,
+          message: Drupal.settings.vkxp.message,
+          from_group: Drupal.settings.vkxp.from_group,
+          attachments: Drupal.settings.vkxp.attachments
         },
         function(response) {
           // Here you may add some response callback
@@ -30,7 +30,7 @@ Drupal.behaviors.vkxp = {
       el.async = true;
       document.getElementById("vk_api_transport").appendChild(el);
     }, 0);
-    
+
   }
 };
 
