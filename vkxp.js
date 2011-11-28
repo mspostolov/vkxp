@@ -1,7 +1,7 @@
 (function($) {
 
 Drupal.behaviors.vkxp = function (context) {
-  if (Drupal && Drupal.settings && Drupal.settings.admin_menu) {
+  if (Drupal && Drupal.settings && Drupal.settings.vkxp) {
 
     //VK open api methods
     window.vkAsyncInit = function() {
