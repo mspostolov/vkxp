@@ -186,7 +186,8 @@ function _vkxp_process_node($node) {
       $post_object   = variable_get('vkxp_post_object', 'body');
       $node_language = $node->language;
       if ($post_object == 'body') {
-        $message = trim(strip_tags($node->body[$node_language][0]['value']));
+        $body = array_shift($node->body);
+        $message = trim(strip_tags($body[0]['value']));
       }
       elseif ($post_object == 'title') {
         $message = trim(check_plain($node->title));
