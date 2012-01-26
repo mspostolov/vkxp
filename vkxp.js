@@ -20,12 +20,58 @@ Drupal.behaviors.vkxp = {
           attachments: settings.vkxp.attachments
         },
         function(response) {
-          // Here you may add some response callback
+          // If captcha needed
+          if (response.error && response.error.error_code == 14) {
+            vkxp_send_captcha(response, settings);
+          }
+
         }
       );
+
     });
-    
+
   }
 };
+
+function vkxp_send_captcha(response, settings) {
+  console.log(response);
+  $('body').prepend('<div id="vkxp-form"></div>');
+
+  $('#vkxp-form')
+    .load(settings.basePath + 'vkxp/captcha #vkxp-captcha-form',
+      {
+        image: response.error.captcha_img
+      }
+    )
+    .dialog({
+      title: Drupal.t('Enter vk captcha'),
+      resizable: false,
+      modal: true
+    });
+
+  $('#vkxp-captcha-form').live('submit', function() {
+    $text = $(this).find('.form-text').val();
+
+    VK.Api.call('wall.post',
+      {
+        owner_id: settings.vkxp.owner_id,
+        message: settings.vkxp.message,
+        from_group: settings.vkxp.from_group,
+        attachments: settings.vkxp.attachments,
+        captcha_sid: response.error.captcha_sid,
+        captcha_key: $text
+      },
+      function (new_response) {
+        // If captcha needed
+        if (new_response.error && new_response.error.error_code == 14) {
+          vkxp_send_captcha(new_response, settings);
+        }
+      }
+    );
+
+    $('#vkxp-form').dialog('destroy').remove();
+    return false;
+  });
+}
 
 })(jQuery);

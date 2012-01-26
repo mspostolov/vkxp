@@ -63,6 +63,14 @@ function vkxp_menu() {
     'type'             => MENU_LOCAL_TASK,
     'weight'           => 2,
   );
+  
+  $items['vkxp/captcha'] = array(
+    'page callback'    => 'drupal_get_form',
+    'page arguments'   => array('vkxp_captcha_form'),
+    'access callback'  => TRUE,
+    'file'             => 'vkxp.pages.inc',
+    'type'             => MENU_CALLBACK,
+  );
 
   return $items;
 }
