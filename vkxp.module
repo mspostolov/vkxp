@@ -10,8 +10,10 @@ define('VKXP_CACHE_DISABLED', 0);
  */
 function vkxp_help($path, $arg) {
   switch ($path) {
+
     case 'admin/settings/vkxp':
       return t('Vkontakte CrossPoster module allows users to post nodes automatically to social network vkontakte.ru.');
+
     case 'admin/help#vkxp':
       $output  = '';
       $output .= '<p>' . t('Vkontakte CrossPoster module allows users to post nodes automatically to social network vkontakte.ru.') . '</p>';
@@ -26,6 +28,7 @@ function vkxp_help($path, $arg) {
  */
 function vkxp_menu() {
   $items = array();
+
   $items['admin/config/services/vkxp'] = array(
     'title'            => 'VKontakte CrossPoster',
     'page callback'    => 'drupal_get_form',
@@ -33,12 +36,14 @@ function vkxp_menu() {
     'access arguments' => array('administer vkontakte crossposter'),
     'file'             => 'vkxp.admin.inc',
   );
+
   $items['admin/config/services/vkxp/main'] = array(
     'title'            => 'Main settings',
     'file'             => 'vkxp.admin.inc',
     'type'             => MENU_DEFAULT_LOCAL_TASK,
     'weight'           => 0,
   );
+
   $items['admin/config/services/vkxp/node'] = array(
     'title'            => 'Node settings',
     'page callback'    => 'drupal_get_form',
@@ -48,6 +53,7 @@ function vkxp_menu() {
     'type'             => MENU_LOCAL_TASK,
     'weight'           => 1,
   );
+
   $items['admin/config/services/vkxp/images'] = array(
     'title'            => 'Images settings',
     'page callback'    => 'drupal_get_form',
@@ -57,6 +63,7 @@ function vkxp_menu() {
     'type'             => MENU_LOCAL_TASK,
     'weight'           => 2,
   );
+
   return $items;
 }
 
@@ -77,23 +84,12 @@ function vkxp_permission() {
 }
 
 /**
-* Implements hook_page_build().
-*/
-function vkxp_page_build(&$page) {
-  if (variable_get('vkxp_enable', 0)) {
-    $page['page_bottom']['vkxp']= array(
-      '#type' => 'markup',
-      '#markup' => '<div id = "vk_api_transport"></div>',
-    );
-  }
-}
-
-/**
  * Implements hook_form_alter().
  */
 function vkxp_form_alter(&$form, &$form_state, $form_id) {
   $node_types = _vkxp_get_selected_node_types();
   foreach ($node_types as $node_type) {
+    debug($node_type);
     if ($form_id == $node_type . '_node_form') {
       _vkxp_process_node_form($form);
     }
@@ -117,11 +113,32 @@ function vkxp_node_update($node) {
 }
 
 /**
- * Override template_preprocess_page().
+ * Implements hook_node_view().
  */
-function vkxp_preprocess_page($vars) {
-  if (isset($vars['node'])) {
-    _vkxp_show_wallpost_script($vars['node']->nid);
+function vkxp_node_view($node, $view_mode, $langcode) {
+  if ($view_mode == 'full') {
+    if (isset($_SESSION['vkxp'][$node->nid])) {
+
+      $script = $_SESSION['vkxp'][$node->nid];
+      $app_id = variable_get('vkxp_app_id', '');
+
+      // Add js.
+      drupal_add_js(
+        array('vkxp' =>
+          array(
+            'app_id'      => $app_id,
+            'owner_id'    => $script['owner_id'],
+            'message'     => $script['message'],
+            'from_group'  => $script['from_group'],
+            'attachments' => $script['attachments'],
+          )
+        ), 'setting');
+
+      drupal_add_js(drupal_get_path('module', 'vkxp') . '/vkxp.js');
+
+      // Unset script from session.
+      unset($_SESSION['vkxp'][$node->nid]);
+    }
   }
 }
 
@@ -163,7 +180,11 @@ function _vkxp_process_node($node) {
   $access_token = variable_get('vkxp_access_token', '');
   $vkxp_enabled = variable_get('vkxp_enable', 0);
   $user_access  = user_access('post to vkontakte');
-  $post_node    = $node->vkxp_post_this_node;
+  $post_node    = FALSE;
+
+  if (isset($node->vkxp_post_this_node)) {
+    $post_node = $node->vkxp_post_this_node;
+  }
 
   // Check requiered data to post
   if ($access_token && $vkxp_enabled && $user_access && $post_node) {
@@ -184,16 +205,16 @@ function _vkxp_process_node($node) {
 
       // Get message from node
       $post_object   = variable_get('vkxp_post_object', 'body');
-      $node_language = $node->language;
       if ($post_object == 'body') {
-        $body = array_shift($node->body);
+        $body    = array_shift($node->body);
         $message = trim(strip_tags($body[0]['value']));
       }
       elseif ($post_object == 'title') {
         $message = trim(check_plain($node->title));
       }
       else {
-        $message = trim(check_plain($node->title)) . "\n\n" . trim(strip_tags($node->body[$node_language][0]['value']));
+        $body    = array_shift($node->body);
+        $message = trim(check_plain($node->title)) . "\n\n" . trim(strip_tags($body[0]['value']));
       }
 
       // Trim message if needed
@@ -259,7 +280,7 @@ function _vkxp_get_node_images($node) {
       $i = 0;
       $image_field = $node->$field;
       $img_array = array_shift($image_field);
-      foreach ($image_field[$node_language] as $image) {
+      foreach ($img_array as $image) {
         if ($image['fid']) {
           if ($i++ == $image_amount) {
             break;
@@ -379,8 +400,8 @@ function _vkxp_post_to_wall($message, $images, $url, $node) {
   }
   $params['application_id'] = variable_get('vkxp_app_id', '');
 
-  // Add script to show on first node page load
-  _vkxp_add_wallpost_script($node->nid, $params);
+  // Add script that will be shown on the first node load
+  $_SESSION['vkxp'][$node->nid] = $params;
 }
 
 /**
@@ -422,50 +443,5 @@ function _vkxp_get_real_imagepath($fid) {
     }
     $path = str_replace('\\', '/', $path);
     return '@' . drupal_realpath($path);
-  }
-}
-
-/**
- * Write wallpost script in database. It should be shown on first page load.
- * @param  $nid: nid of node where script should be shown
- * @param  $script: script code
- * @return void
- */
-function _vkxp_add_wallpost_script($nid, $script) {
-  global $user;
-  $notifications = variable_get('vkxp_wallpost_script', '');
-  $notifications[$nid . '_' . $user->uid] = $script;
-  variable_set('vkxp_wallpost_script', $notifications);
-}
-
-/**
- * Show wallpost script on node page
- * @param  $nid: nid of node where script should be shown
- * @return void
- */
-function _vkxp_show_wallpost_script($nid) {
-  global $user;
-  $notifications = variable_get('vkxp_wallpost_script', '');
-  $key = $nid . '_' . $user->uid;
-  if (isset($notifications[$key])) {
-    $script = $notifications[$key];
-    $app_id = variable_get('vkxp_app_id', '');
-
-    // Add js
-    drupal_add_js(
-      array('vkxp' =>
-        array(
-          'app_id'      => $app_id,
-          'owner_id'    => $script['owner_id'],
-          'message'     => $script['message'],
-          'from_group'  => $script['from_group'],
-          'attachments' => $script['attachments'],
-        )
-      ), 'setting');
-    drupal_add_js(drupal_get_path('module', 'vkxp') . '/vkxp.js');
-
-    // Unset showed script from varialbes
-    unset($notifications[$key]);
-    variable_set('vkxp_wallpost_script', $notifications);
   }
 }

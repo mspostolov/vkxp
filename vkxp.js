@@ -3,11 +3,14 @@
 Drupal.behaviors.vkxp = {
   attach: function (context, settings) {
 
-    //vk open api methods
-    window.vkAsyncInit = function() {
+    $.getScript('http://vk.com/js/api/openapi.js', function() {
+
+      // Initialize VK OPEN API
       VK.init({
         apiId: settings.vkxp.app_id
       });
+
+      // Post node to vk wall
       VK.Api.call(
         'wall.post',
         {
@@ -20,16 +23,7 @@ Drupal.behaviors.vkxp = {
           // Here you may add some response callback
         }
       );
-    };
-
-    // Async script loading
-    setTimeout(function() {
-      var el = document.createElement("script");
-      el.type = "text/javascript";
-      el.src = "http://vkontakte.ru/js/api/openapi.js";
-      el.async = true;
-      document.getElementById("vk_api_transport").appendChild(el);
-    }, 0);
+    });
     
   }
 };
