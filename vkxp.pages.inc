@@ -2,7 +2,7 @@
 
 /**
  * @file vkxp.pages.inc
- * Contains all forms for VKXP modue.
+ * Contains page and form for captcha processing.
  */
 
 /**
@@ -10,7 +10,6 @@
  */
 function vkxp_captcha_page() {
   if (isset($_REQUEST['image']) && $_REQUEST['image']) {
-    debug($_REQUEST);
     $form = drupal_get_form('vkxp_captcha_form', $_REQUEST['image']);
     return render($form);
   }

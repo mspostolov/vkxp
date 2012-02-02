@@ -2,4 +2,5 @@ name = VKontakte CrossPoster
 description = Allows to send data automatically to vkontakte.ru
 core = 7.x
 package = VK
+
 configure = admin/config/services/vkxp

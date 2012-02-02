@@ -1,11 +1,6 @@
 <?php
 
 /**
- * Constant definitions
- */
-define('VKXP_CACHE_DISABLED', 0);
-
-/**
  * Implements hook_help().
  */
 function vkxp_help($path, $arg) {
@@ -27,6 +22,7 @@ function vkxp_help($path, $arg) {
  * Implements hook_menu().
  */
 function vkxp_menu() {
+
   $items = array();
 
   $items['admin/config/services/vkxp'] = array(
@@ -97,7 +93,6 @@ function vkxp_permission() {
 function vkxp_form_alter(&$form, &$form_state, $form_id) {
   $node_types = _vkxp_get_selected_node_types();
   foreach ($node_types as $node_type) {
-    debug($node_type);
     if ($form_id == $node_type . '_node_form') {
       _vkxp_process_node_form($form);
     }
@@ -108,7 +103,7 @@ function vkxp_form_alter(&$form, &$form_state, $form_id) {
  * Implements hook_node_insert().
  */
 function vkxp_node_insert($node) {
-  // Post node to vkontakte
+  // Post node to vk.com.
   _vkxp_process_node($node);
 }
 
@@ -116,43 +111,42 @@ function vkxp_node_insert($node) {
  * Implements hook_node_update().
  */
 function vkxp_node_update($node) {
-  // Post node to vkontakte
+  // Post node to vk.com.
   _vkxp_process_node($node);
 }
 
 /**
- * Implements hook_node_view().
+ * Implements hook_init().
  */
-function vkxp_node_view($node, $view_mode, $langcode) {
-  if ($view_mode == 'full') {
-    if (isset($_SESSION['vkxp'][$node->nid])) {
+function vkxp_init() {
 
-      $script = $_SESSION['vkxp'][$node->nid];
-      $app_id = variable_get('vkxp_app_id', '');
+  // Check user session for vkxp scripts.
+  if (isset($_SESSION['vkxp']) && sizeof($_SESSION['vkxp']) > 0) {
 
-      // Add js.
-      drupal_add_js(
-        array('vkxp' =>
-          array(
-            'app_id'      => $app_id,
-            'owner_id'    => $script['owner_id'],
-            'message'     => $script['message'],
-            'from_group'  => $script['from_group'],
-            'attachments' => $script['attachments'],
-          )
-        ), 'setting');
+    // Get script for the first node in the user session.
+    $script = array_shift($_SESSION['vkxp']);
+    $app_id = variable_get('vkxp_app_id', '');
 
-      drupal_add_js(drupal_get_path('module', 'vkxp') . '/vkxp.js');
+    // Add settings for crossposting to the page.
+    drupal_add_js(
+      array('vkxp' =>
+        array(
+          'app_id'      => $app_id,
+          'owner_id'    => $script['owner_id'],
+          'message'     => $script['message'],
+          'from_group'  => $script['from_group'],
+          'attachments' => $script['attachments'],
+        )
+      ), 'setting');
 
-      // Unset script from session.
-      unset($_SESSION['vkxp'][$node->nid]);
-    }
+    // Add js for Open API jquery to vk.com.
+    drupal_add_js(drupal_get_path('module', 'vkxp') . '/vkxp.js');
   }
 }
 
 /**
- * Add vkxp fieldset to node forms
- * @param $form: node form
+ * Add vkxp fieldset to node forms.
+ * @param $form: node form.
  */
 function _vkxp_process_node_form(&$form) {
   $user_has_access = user_access('post to vkontakte');
@@ -180,38 +174,41 @@ function _vkxp_process_node_form(&$form) {
 }
 
 /**
- * Process $node and send it to vkontakte.ru if needed
+ * Process $node and send it to vkontakte.ru if needed.
  */
 function _vkxp_process_node($node) {
-  global $user;
-  // Collect data and access to post node
-  $access_token = variable_get('vkxp_access_token', '');
-  $vkxp_enabled = variable_get('vkxp_enable', 0);
-  $user_access  = user_access('post to vkontakte');
-  $post_node    = FALSE;
 
-  if (isset($node->vkxp_post_this_node)) {
-    $post_node = $node->vkxp_post_this_node;
-  }
+  $selected_types = _vkxp_get_selected_node_types();
 
-  // Check requiered data to post
-  if ($access_token && $vkxp_enabled && $user_access && $post_node) {
-    $selected_types = _vkxp_get_selected_node_types();
-    // If current node is in selected types list - crosspost it
-    if (in_array($node->type, $selected_types)) {
-        
-      // Clear cached data if user wants to add link to this page
-      // If cache will not be cleared, vkontakte may not post this node due to unaccessable node url
+  // If current node is in selected types list - crosspost it.
+  if (in_array($node->type, $selected_types)) {
+
+    global $user;
+    // Collect data and check access to crosspost nodes.
+    $access_token = variable_get('vkxp_access_token', '');
+    $vkxp_enabled = variable_get('vkxp_enable', 0);
+    $user_access  = user_access('post to vkontakte');
+    $post_node    = FALSE;
+
+    if (isset($node->vkxp_post_this_node)) {
+      $post_node = $node->vkxp_post_this_node;
+    }
+
+    // Check requiered data to post.
+    if ($access_token && $vkxp_enabled && $user_access && $post_node) {    
+
+      // Clear cached data if user wants to add link to this page.
+      // If cache will not be cleared, vkontakte may not post this node due to unaccessable node url.
       $add_link_to_node = variable_get('vkxp_add_link', 0);
-      $cache_disabled   = variable_get('cache', VKXP_CACHE_DISABLED) == VKXP_CACHE_DISABLED ? TRUE : FALSE;
+      $cache_disabled   = variable_get('cache', 0) ? FALSE : TRUE;
       if ($add_link_to_node && !$cache_disabled) {
         cache_clear_all(NULL, 'cache_page');
       }
-        
-      // Get absolute node link
+
+      // Get absolute node link.
       $url = url('node/' . $node->nid, array('absolute' => TRUE));
 
-      // Get message from node
+      // Get message from node.
       $post_object   = variable_get('vkxp_post_object', 'body');
       if ($post_object == 'body') {
         $body    = array_shift($node->body);
@@ -225,7 +222,7 @@ function _vkxp_process_node($node) {
         $message = trim(check_plain($node->title)) . "\n\n" . trim(strip_tags($body[0]['value']));
       }
 
-      // Trim message if needed
+      // Trim message if needed.
       $cut_message = variable_get('vkxp_cut_message', 1);
       if ($cut_message) {
         $length = variable_get('vkxp_cut_message_length', 255);
@@ -234,11 +231,11 @@ function _vkxp_process_node($node) {
         }
       }
 
-      // Decode special symbols
+      // Decode special symbols.
       $message = html_entity_decode($message, ENT_QUOTES, 'UTF-8');
       $message = htmlspecialchars_decode($message);
 
-      // Post node to vk
+      // Post node to vk.com.
       $images    = _vkxp_get_node_images($node);
       $image_ids = '';
       if ($images) {
@@ -251,18 +248,19 @@ function _vkxp_process_node($node) {
 }
 
 /**
- * Function makes query to vkontakte.ru
- * Allows using hook_vkxp_query_alter() for altering query params
+ * Function makes query to vk.com.
+ * Allows using hook_vkxp_query_alter() for altering query params.
  */
 function vkxp_query($method, $params, $request_url = 'https://api.vkontakte.ru/method/') {
-  // Collect query data
+
+  // Collect query data.
   $query = array();
   $query['method'] = $method;
   $query['params'] = $params;
   $query['request_url'] = $request_url;
   drupal_alter('vkxp_query', $query);
 
-  // cURL request
+  // cURL request to vk.com.
   $curl = curl_init();
   curl_setopt ($curl, CURLOPT_URL, $query['request_url'] . $query['method']);
   curl_setopt ($curl, CURLOPT_POST, 1);
@@ -275,9 +273,9 @@ function vkxp_query($method, $params, $request_url = 'https://api.vkontakte.ru/m
 }
 
 /**
- * Get images from selected imagefield
- * @param $node: node object
- * @return array: array with images for uploading
+ * Get images from selected imagefield.
+ * @param $node: node object.
+ * @return array: array with images for uploading.
  */
 function _vkxp_get_node_images($node) {
   $images = array();
@@ -302,10 +300,11 @@ function _vkxp_get_node_images($node) {
 }
 
 /**
- * @return array: node types selected for crossposting
+ * @return array: node types selected for crossposting.
  */
 function _vkxp_get_selected_node_types() {
-  // Get node types that should be crossposted
+
+  // Get node types that should be crossposted.
   $types = variable_get('vkxp_node_types', array());
   $selected_types = array();
   foreach ($types as $key => $type) {
@@ -317,8 +316,8 @@ function _vkxp_get_selected_node_types() {
 }
 
 /**
- * Makes http query to api server to get upload uri
- * @return upload url on success or FALSE on failure
+ * Makes http query to api server to get upload uri.
+ * @return upload url on success or FALSE on failure.
  */
 function _vkxp_get_upload_server() {
   $params = array();
@@ -343,18 +342,21 @@ function _vkxp_get_upload_server() {
 }
 
 /**
- * Upload and save images to vk server
- * @param  $upload_url: url of upload server
- * @param  $images: array of images to upload
- * @return string with uploaded image IDs separated by comma. Example: photo312312_3123123,photo312312_3123124
+ * Upload and save images to vk server.
+ * @param  $upload_url: url of upload server.
+ * @param  $images: array of images to upload.
+ * @return string with uploaded image IDs separated by comma. Example: photo312312_3123123,photo312312_3123124.
  */
 function _vkxp_upload_images($upload_url, $images) {
-  // Array with saved image IDs
+
+  // Array with saved image IDs.
   $image_ids = array();
   foreach ($images as $image) {
-    // Upload photo
+
+    // Upload photo.
     $upload_result = vkxp_query('', array('photo' => $image), $upload_url);
-    // If photo was uploaded it should be saved
+
+    // If photo was uploaded it should be saved.
     if ($upload_result['server'] && $upload_result['photo'] && $upload_result['hash']) {
       $params = array();
       $params['access_token'] = variable_get('vkxp_access_token', '');
@@ -367,8 +369,11 @@ function _vkxp_upload_images($upload_url, $images) {
       else {
         $params['uid'] = variable_get('vkxp_group_id', '');
       }
-      $save_result            = vkxp_query('photos.saveWallPhoto', $params);
-      // If image was successfully saved it returns photo ID in format 'photoXXXXXXX_XXXXXXX'
+
+      // Upload query to vk.com.
+      $save_result = vkxp_query('photos.saveWallPhoto', $params);
+
+      // If image was successfully saved it returns photo ID in format 'photoXXXXXXX_XXXXXXX'.
       if ($save_result['response'][0]['id']) {
         $image_ids[] = $save_result['response'][0]['id'];
       }
@@ -381,11 +386,11 @@ function _vkxp_upload_images($upload_url, $images) {
 }
 
 /**
- * Post node message with uploaded images to wall
- * @param  $message: text to post
- * @param  $images: string with photo IDs to post
- * @param  $url: absolute link to posted node
- * @return array: server response
+ * Post node message with uploaded images to wall.
+ * @param  $message: text to post.
+ * @param  $images: string with photo IDs to post.
+ * @param  $url: absolute link to posted node.
+ * @return array: server response.
  */
 function _vkxp_post_to_wall($message, $images, $url, $node) {
   $params = array();
@@ -408,14 +413,14 @@ function _vkxp_post_to_wall($message, $images, $url, $node) {
   }
   $params['application_id'] = variable_get('vkxp_app_id', '');
 
-  // Add script that will be shown on the first node load
+  // Add script that will be shown on the first node load.
   $_SESSION['vkxp'][$node->nid] = $params;
 }
 
 /**
- * Log messages and print it on the screen
- * @param $message: array with message and it severity
- * @param $link: link to view node
+ * Log messages and print it on the screen.
+ * @param $message: array with message and it severity.
+ * @param $link: link to view node.
  */
 function _vkxp_watchdog($message, $link = NULL) {
   drupal_set_message($message['text'], $message['severity']);
@@ -432,14 +437,15 @@ function _vkxp_watchdog($message, $link = NULL) {
 }
 
 /**
- * Return image realpath by file ID
- * @param  $fid: Image file ID
- * @return string
+ * Return image realpath by file ID.
+ * @param  $fid: Image file ID.
+ * @return string.
  */
 function _vkxp_get_real_imagepath($fid) {
   $file_uri = file_load($fid)->uri;
   $schemes = array('public');
   $scheme = file_uri_scheme($file_uri);
+
   // Only serve shipped files and public created files from the CDN.
   if (!$scheme || in_array($scheme, $schemes)) {
     if (!$scheme) {

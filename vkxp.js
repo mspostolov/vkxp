@@ -5,12 +5,12 @@ Drupal.behaviors.vkxp = {
 
     $.getScript('http://vk.com/js/api/openapi.js', function() {
 
-      // Initialize VK OPEN API
+      // Initialize Open API.
       VK.init({
         apiId: settings.vkxp.app_id
       });
 
-      // Post node to vk wall
+      // Post node to vk wall.
       VK.Api.call(
         'wall.post',
         {
@@ -20,28 +20,26 @@ Drupal.behaviors.vkxp = {
           attachments: settings.vkxp.attachments
         },
         function(response) {
-          // If captcha needed
+
+          // If captcha needed.
           if (response.error && response.error.error_code == 14) {
             vkxp_send_captcha(response, settings);
           }
-
         }
       );
 
     });
-
   }
 };
 
 function vkxp_send_captcha(response, settings) {
-  console.log(response);
+
   $('body').prepend('<div id="vkxp-form"></div>');
 
   $('#vkxp-form')
-    .load(settings.basePath + 'vkxp/captcha #vkxp-captcha-form',
-      {
-        image: response.error.captcha_img
-      }
+    .load(
+      settings.basePath + 'vkxp/captcha #vkxp-captcha-form',
+      { image: response.error.captcha_img }
     )
     .dialog({
       title: Drupal.t('Enter vk captcha'),
@@ -62,7 +60,8 @@ function vkxp_send_captcha(response, settings) {
         captcha_key: $text
       },
       function (new_response) {
-        // If captcha needed
+
+        // If captcha needed.
         if (new_response.error && new_response.error.error_code == 14) {
           vkxp_send_captcha(new_response, settings);
         }

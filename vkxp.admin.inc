@@ -2,15 +2,16 @@
 
 /**
  * @file
- * Contains vkxp settings forms
+ * Contains vkxp settings forms.
  */
 
 /**
- * Page callback
- * Return form with main settings
+ * Page callback.
+ * Return form with VKXP main settings.
  */
 function vkxp_admin_main_settings() {
-  // Process request from vk
+
+  // Process request from vk.
   if (isset($_GET['code'])) {
     $params = array();
     $params['client_id'] = trim(variable_get('vkxp_app_id', 0));
@@ -119,12 +120,12 @@ function vkxp_admin_main_settings() {
 }
 
 /**
- * Submit function for vkxp main settings form
+ * Submit callback for vkxp main settings form.
  */
 function vkxp_admin_main_settings_submit($form, &$form_state) {
   $values = $form_state['values'];
 
-  // Save values
+  // Save values.
   variable_set('vkxp_enable'         , $values['vkxp_enable']);
   variable_set('vkxp_group_id'       , trim($values['vkxp_group_id']));
   variable_set('vkxp_wall_owner'     , $values['vkxp_wall_owner']);
@@ -132,7 +133,7 @@ function vkxp_admin_main_settings_submit($form, &$form_state) {
   variable_set('vkxp_official'       , $values['vkxp_official']);
   variable_set('vkxp_add_link'       , $values['vkxp_add_link']);
 
-  // If application id or application secret was changed we should get new access token
+  // If application ID or application secret key was changed we should get new access token.
   $app_id_changed = variable_get('vkxp_app_id', 0) != $values['vkxp_app_id'];
   $secret_changed = variable_get('vkxp_app_secret', 0) != $values['vkxp_app_secret'];
   $reset_clicked  = $values['op'] == $form['reset']['#value'];
@@ -154,10 +155,11 @@ function vkxp_admin_main_settings_submit($form, &$form_state) {
 }
 
 /**
- * Page callback
- * Return form with node settings
+ * Page callback.
+ * Return form with node settings.
  */
 function vkxp_admin_node_settings() {
+
   $form = array();
 
   $form['node_types'] = array(
@@ -165,11 +167,10 @@ function vkxp_admin_node_settings() {
     '#title' => t('Node types'),
   );
 
-  $options = node_type_get_names();
   $form['node_types']['vkxp_node_types'] = array(
     '#type' => 'checkboxes',
     '#title' => t('Node types to crosspost'),
-    '#options' => $options,
+    '#options' => node_type_get_names(),
     '#default_value' => variable_get('vkxp_node_types', array()),
   );
 
@@ -208,11 +209,12 @@ function vkxp_admin_node_settings() {
 }
 
 /**
- * Return form width vkxp image settings
+ * Return form width vkxp image settings.
  */
 function vkxp_admin_images_settings() {
   $form = array();
-  // Get node types that should be crossposted
+
+  // Get node types that should be crossposted.
   $selected_node_types = _vkxp_get_selected_node_types();
   if (!$selected_node_types) {
     $form['image'] = array('#markup' => t('Please, select content types to see their image fiels'));
@@ -224,7 +226,7 @@ function vkxp_admin_images_settings() {
     $fields_info = field_info_fields();
     foreach ($selected_node_types as $node_type) {
 
-      // Build fieldset for every selected node type
+      // Build fieldset for every selected node type.
       $node_types = node_type_get_names();
       $form['vkxp_node_type_' . $node_type] = array(
         '#type' => 'fieldset',
@@ -240,7 +242,7 @@ function vkxp_admin_images_settings() {
         }
       }
 
-      // If imagefield for this node type found - build settings form for that
+      // If imagefield for this node type found - build settings form for it.
       if (isset($image_fields[$node_type])) {
         $form['vkxp_node_type_' . $node_type]['vkxp_' . $node_type . '_image_amount'] = array(
           '#type' => 'select',
