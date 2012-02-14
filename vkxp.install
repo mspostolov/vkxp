@@ -6,7 +6,7 @@
  */
 
 /**
- * Implementation of hook_requirements()
+ * Implementation of hook_requirements().
  */
 function vkxp_requirements($phase) {
   $requirements = array();
@@ -35,9 +35,9 @@ function vkxp_requirements($phase) {
 }
 
 /**
- * Implementation of hook_uninstall()
+ * Implementation of hook_uninstall().
  */
 function vkxp_uninstall() {
-  db_query("DELETE FROM {variable} WHERE name LIKE 'vkxp_%'");
+  db_query('DELETE FROM {variable} WHERE name LIKE "vkxp_"');
   cache_clear_all('variables', 'cache');
 }

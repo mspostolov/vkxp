@@ -2,15 +2,15 @@
 
 /**
  * @file
- * Contains vkxp settings forms
+ * Contains vkxp settings forms.
  */
 
 /**
- * Page callback
- * Return form with main settings
+ * Page callback.
+ * Return form with main settings.
  */
 function vkxp_admin_main_settings() {
-  // Process request from vk
+  // Process request from vk.
   if ($_GET['code']) {
     $params = array();
     $params['client_id'] = trim(variable_get('vkxp_app_id', 0));
@@ -19,10 +19,7 @@ function vkxp_admin_main_settings() {
     $result = vkxp_query('', $params, 'https://api.vkontakte.ru/oauth/access_token');
     if ($result['access_token']) {
       variable_set('vkxp_access_token', $result['access_token']);
-      _vkxp_watchdog(
-        array('text' => t('Access token was recieved from vkontakte. Now you may post your nodes there.'),
-        'severity' => 'status')
-      );
+      _vkxp_watchdog(array('text' => t('Access token was recieved from vkontakte. Now you may post your nodes there.'), 'severity' => 'status'));
     }
     else {
       _vkxp_watchdog(
@@ -54,7 +51,7 @@ function vkxp_admin_main_settings() {
   $form['vkxp_main']['vkxp_group_id'] = array(
     '#type' => 'textfield',
     '#title' => t('Owner ID'),
-    '#required' => true,
+    '#required' => TRUE,
     '#default_value' => variable_get('vkxp_group_id', ''),
   );
 
@@ -117,7 +114,7 @@ function vkxp_admin_main_settings() {
 }
 
 /**
- * Submit function for vkxp main settings form
+ * Submit function for vkxp main settings form.
  */
 function vkxp_admin_main_settings_submit($form, &$form_state) {
   $values = $form_state['values'];
@@ -130,7 +127,7 @@ function vkxp_admin_main_settings_submit($form, &$form_state) {
   variable_set('vkxp_official'       , $values['vkxp_official']);
   variable_set('vkxp_add_link'       , $values['vkxp_add_link']);
 
-  // If application id or application secret was changed we should get new access token
+  // If application id or application secret was changed we should get new access token.
   $app_id_changed = variable_get('vkxp_app_id', 0) != $values['vkxp_app_id'];
   $secret_changed = variable_get('vkxp_app_secret', 0) != $values['vkxp_app_secret'];
   $reset_clicked  = $values['op'] == $form['reset']['#value'];
@@ -152,8 +149,8 @@ function vkxp_admin_main_settings_submit($form, &$form_state) {
 }
 
 /**
- * Page callback
- * Return form with node settings
+ * Page callback.
+ * Return form with node settings.
  */
 function vkxp_admin_node_settings() {
   $form = array();
@@ -206,11 +203,11 @@ function vkxp_admin_node_settings() {
 }
 
 /**
- * Return form width vkxp image settings
+ * Return form width vkxp image settings.
  */
 function vkxp_admin_images_settings() {
   $form = array();
-  // Get node types that should be crossposted
+  // Get node types that should be crossposted.
   $selected_node_types = _vkxp_get_selected_node_types();
   if (!$selected_node_types) {
     $form['imagefield'] = array('#value' => t('Please, select content types to see their image fiels'));
@@ -222,14 +219,14 @@ function vkxp_admin_images_settings() {
     $content_info = _content_type_info();
     foreach ($selected_node_types as $node_type) {
 
-      // Build fieldset for every selected node type
+      // Build fieldset for every selected node type.
       $node_types = node_get_types('names');
       $form['vkxp_node_type_' . $node_type] = array(
         '#type' => 'fieldset',
         '#title' => $node_types[$node_type],
       );
 
-      // If node type has cck fields we should find imagefield
+      // If node type has cck fields we should find imagefield.
       if($content_info['content types'][$node_type]['fields']) {
         $fields = $content_info['content types'][$node_type]['fields'];
         foreach ($fields as $field) {
@@ -239,8 +236,9 @@ function vkxp_admin_images_settings() {
         }
       }
 
-      // If imagefield for this node type found - build settings form for that
+      // If imagefield for this node type found - build settings form for that.
       if ($image_fields[$node_type]) {
+
         $form['vkxp_node_type_' . $node_type][$node_type . '_image_amount'] = array(
           '#type' => 'select',
           '#title' => t('Select amount of images'),
@@ -248,6 +246,7 @@ function vkxp_admin_images_settings() {
           '#default_value' => variable_get($node_type . '_image_amount', 0),
           '#description' => t('Amount of images which will be posted to vkontakte.ru'),
         );
+
         $form['vkxp_node_type_' . $node_type][$node_type . '_image_field'] = array(
           '#type' => 'select',
           '#title' => t('Select imagefield'),
@@ -255,6 +254,7 @@ function vkxp_admin_images_settings() {
           '#default_value' => variable_get($node_type . '_image_field', ''),
           '#description' => t('Selected field will be posted with message to vkontakte.ru'),
         );
+
       }
       else {
         $form['vkxp_node_type_' . $node_type]['empty_value'] = array('#value' => t('This node types does not contain image fields'));
