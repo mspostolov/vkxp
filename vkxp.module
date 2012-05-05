@@ -121,7 +121,9 @@ function vkxp_node_update($node) {
 function vkxp_init() {
 
   // Check user session for vkxp scripts.
-  if (isset($_SESSION['vkxp']) && sizeof($_SESSION['vkxp']) > 0) {
+  $overlay_enabled  = isset($_REQUEST['render']) && $_REQUEST['render'] == 'overlay';
+  $vkxp_data_exists = isset($_SESSION['vkxp']) && sizeof($_SESSION['vkxp']) > 0;
+  if (!$overlay_enabled && $vkxp_data_exists) {
 
     // Get script for the first node in the user session.
     $script = array_shift($_SESSION['vkxp']);
