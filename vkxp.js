@@ -3,6 +3,12 @@
 Drupal.behaviors.vkxp = {
   attach: function (context, settings) {
 
+    // Make sure this behavior is not processed more than once.
+    if (this.processed) {
+      return;
+    }
+    this.processed = true;
+
     $.getScript('http://vk.com/js/api/openapi.js', function() {
 
       // Initialize Open API.

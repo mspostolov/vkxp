@@ -251,7 +251,7 @@ function _vkxp_process_node($node) {
  * Function makes query to vk.com.
  * Allows using hook_vkxp_query_alter() for altering query params.
  */
-function vkxp_query($method, $params, $request_url = 'https://api.vkontakte.ru/method/') {
+function vkxp_query($method, $params, $request_url = 'https://api.vk.com/method/') {
 
   // Collect query data.
   $query = array();

@@ -59,6 +59,7 @@ function vkxp_admin_main_settings() {
     '#title' => t('Owner ID'),
     '#required' => true,
     '#default_value' => variable_get('vkxp_group_id', ''),
+    '#description' => t('User ID or group ID.')
   );
 
   $form['vkxp_main']['vkxp_wall_owner'] = array(
@@ -147,7 +148,11 @@ function vkxp_admin_main_settings_submit($form, &$form_state) {
     $params['redirect_uri'] = url('admin/config/services/vkxp/main', array('absolute' => TRUE));
     $params['response_type'] = 'code';
     $data = http_build_query($params, '', '&');
-    $url = 'http://api.vkontakte.ru/oauth/authorize?' . $data;
+    $url = 'http://oauth.vk.com/authorize?' . $data;
+    if (module_exists('overlay') && overlay_get_mode() !== 'none') {
+      overlay_close_dialog($url);
+      overlay_deliver_empty_page();
+    }
     drupal_goto($url);
   }
 
