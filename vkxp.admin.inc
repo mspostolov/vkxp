@@ -9,60 +9,50 @@
  * Page callback.
  * Return form with VKXP main settings.
  */
-function vkxp_admin_main_settings() {
+function vkxp_admin_main_settings($form, &$form_state) {
 
-  // Process request from vk.
-  if (isset($_GET['code'])) {
-    $params = array();
-    $params['client_id'] = trim(variable_get('vkxp_app_id', 0));
-    $params['client_secret'] = trim(variable_get('vkxp_app_secret', 0));
-    $params['code'] = $_GET['code'];
-    $result = vkxp_query('', $params, 'https://api.vkontakte.ru/oauth/access_token');
-    if (isset($result['access_token'])) {
-      variable_set('vkxp_access_token', $result['access_token']);
-      _vkxp_watchdog(
-        array(
-          'text' => t('Access token was recieved from vkontakte. Now you may post your nodes there.'),
-          'severity' => 'status'
-        )
-      );
-    }
-    else {
-      _vkxp_watchdog(
-        array('text' => t('Access token was not recieved from vkontakte. Error: !error (!error_description)',
-        array('!error' => $result['error'], '!error_description' => $result['error_description'])), 'severity' =>  'error')
-      );
-    }
-  }
-  elseif (isset($_GET['error'])) {
-    _vkxp_watchdog(
-      array('text' => t('Access code was not recieved from vkontakte. Error: !error (!error_description)',
-      array('!error' => $_GET['error'], '!error_description'=> $_GET['error_description'])), 'severity' => 'error')
-    );
-  }
-
-  $form = array();
-
-  $form['vkxp_enable'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Enable VKontakte crossposter'),
-    '#default_value' => variable_get('vkxp_enable', 0),
-  );
-
-  $form['vkxp_main'] = array(
+  // Application settings.
+  $form['vkxp_application'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Main settings'),
+    '#title' => t('Application settings'),
+    '#collapsible' => TRUE,
+    '#description' => t('Note: You have to !create standalone vkontakte application to make this module work.',
+      array('!create' => l(t('create'), 'http://vk.com/editapp?act=create', array('attributes' => array('target' => '_blank'))))),
   );
 
-  $form['vkxp_main']['vkxp_group_id'] = array(
+  $form['vkxp_application']['vkxp_app_id'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Application ID'),
+    '#required' => TRUE,
+    '#default_value' => variable_get('vkxp_app_id', ''),
+    '#description' => t('ID of vk application.'),
+  );
+
+  $form['vkxp_application']['vkxp_app_secret'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Application secret code'),
+    '#required' => TRUE,
+    '#default_value' => variable_get('vkxp_app_secret', ''),
+    '#description' => t('Secret code of vk application.')
+  );
+
+  // Owner settings.
+  $form['vkxp_owner'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Owner settings'),
+    '#description' => t('Set user or group to which data will be transferred.'),
+    '#collapsible' => TRUE,
+  );
+
+  $form['vkxp_owner']['vkxp_group_id'] = array(
     '#type' => 'textfield',
     '#title' => t('Owner ID'),
-    '#required' => true,
+    '#required' => TRUE,
     '#default_value' => variable_get('vkxp_group_id', ''),
-    '#description' => t('User ID or group ID.')
+    '#description' => t('User ID or Group ID.'),
   );
 
-  $form['vkxp_main']['vkxp_wall_owner'] = array(
+  $form['vkxp_owner']['vkxp_wall_owner'] = array(
     '#type' => 'select',
     '#title' => t('Select owner type'),
     '#options' => array(
@@ -70,49 +60,48 @@ function vkxp_admin_main_settings() {
       'user' => t('User'),
     ),
     '#default_value' => variable_get('vkxp_wall_owner', 'group'),
+    '#description' => t('Who owns the above ID.'),
   );
 
-  $form['vkxp_main']['vkxp_app_id'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Application ID'),
-    '#required' => true,
-    '#default_value' => variable_get('vkxp_app_id', ''),
+  // Additional settings.
+  $form['vkxp_additional'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Additional settings'),
+    '#collapsible' => TRUE,
   );
 
-  $form['vkxp_main']['vkxp_app_secret'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Application secret code'),
-    '#required' => true,
-    '#default_value' => variable_get('vkxp_app_secret', ''),
-  );
-
-  $form['vkxp_main']['vkxp_enabled_default'] = array(
+  $form['vkxp_additional']['vkxp_enabled_default'] = array(
     '#type' => 'checkbox',
-    '#title' => t('Checkbox "Post this node to vkontakte.ru" are checked by default'),
+    '#title' => t('Checkbox "Post this node to vk.com" are checked by default'),
     '#default_value' => variable_get('vkxp_enabled_default', 0),
-    '#description' => t('Check this if you want checkbox "Post this node to vkontakte.ru" in node form was checked by default')
+    '#description' => t('Check this if you want checkbox "Post this node to vk.com" in node forms was checked by default.')
   );
 
-  $form['vkxp_main']['vkxp_official'] = array(
+  $form['vkxp_additional']['vkxp_official'] = array(
     '#type' => 'checkbox',
     '#title' => t('Write from group name'),
     '#default_value' => variable_get('vkxp_official', 1),
-    '#description' => t('Check this if you want to post messages from group name'),
+    '#description' => t('Check this if you want to post messages from group name.'),
   );
-  
-  $form['vkxp_main']['vkxp_add_link'] = array(
+
+  $form['vkxp_additional']['vkxp_add_link'] = array(
     '#type' => 'checkbox',
     '#title' => t('Add link on wall to posted page'),
     '#default_value' => variable_get('vkxp_add_link', 0),
-    '#description' => t('Check this if you want to post node url on vk wall'),
+    '#description' => t('Check this if you want to post node url on vk wall.'),
   );
 
-  $form['submit'] = array(
+  // Submitters.
+  $form['actions'] = array(
+    '#type' => 'action',
+  );
+
+  $form['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Save settings'),
   );
 
-  $form['reset'] = array(
+  $form['actions']['reset'] = array(
     '#type' => 'submit',
     '#value' => t('Recieve new access token'),
   );
@@ -124,39 +113,33 @@ function vkxp_admin_main_settings() {
  * Submit callback for vkxp main settings form.
  */
 function vkxp_admin_main_settings_submit($form, &$form_state) {
-  $values = $form_state['values'];
+  $values = &$form_state['values'];
 
-  // Save values.
-  variable_set('vkxp_enable'         , $values['vkxp_enable']);
-  variable_set('vkxp_group_id'       , trim($values['vkxp_group_id']));
-  variable_set('vkxp_wall_owner'     , $values['vkxp_wall_owner']);
-  variable_set('vkxp_enabled_default', $values['vkxp_enabled_default']);
-  variable_set('vkxp_official'       , $values['vkxp_official']);
-  variable_set('vkxp_add_link'       , $values['vkxp_add_link']);
+  // Trim values just in case.
+  $values['vkxp_app_id']     = trim($values['vkxp_app_id']);
+  $values['vkxp_app_secret'] = trim($values['vkxp_app_secret']);
 
   // If application ID or application secret key was changed we should get new access token.
-  $app_id_changed = variable_get('vkxp_app_id', 0) != $values['vkxp_app_id'];
+  $app_id_changed = variable_get('vkxp_app_id', 0)     != $values['vkxp_app_id'];
   $secret_changed = variable_get('vkxp_app_secret', 0) != $values['vkxp_app_secret'];
-  $reset_clicked  = $values['op'] == $form['reset']['#value'];
-  if ($app_id_changed || $secret_changed || $reset_clicked) {
-    variable_set('vkxp_app_id', trim($values['vkxp_app_id']));
-    variable_set('vkxp_app_secret', trim($values['vkxp_app_secret']));
-    $params = array();
-    $params['client_id'] = trim($values['vkxp_app_id']);
-    $params['scope'] = 'wall,groups,photos,offline';
-    $params['display'] = 'page';
-    $params['redirect_uri'] = url('admin/config/services/vkxp/main', array('absolute' => TRUE));
-    $params['response_type'] = 'code';
-    $data = http_build_query($params, '', '&');
-    $url = 'http://oauth.vk.com/authorize?' . $data;
-    if (module_exists('overlay') && overlay_get_mode() !== 'none') {
-      overlay_close_dialog($url);
-      overlay_deliver_empty_page();
-    }
-    drupal_goto($url);
-  }
+  $reset_clicked  = $values['op'] == $values['reset'];
 
-  drupal_set_message(t('The configuration options have been saved.'));
+  // Save form state values.
+  system_settings_form_submit($form, $form_state);
+
+  if ($app_id_changed || $secret_changed || $reset_clicked) {
+
+    // Build params for http://vk.com to get new access token.
+    $params = array();
+    $params['client_id']     = $form_state['values']['vkxp_app_id'];
+    $params['scope']         = VKXP_AUTHORIZE_SCOPE;
+    $params['redirect_uri']  = url(VKXP_AUTHORIZE_REDIRECT_URI, array('absolute' => TRUE));
+    $params['response_type'] = VKXP_AUTHORIZE_RESPONSE_TYPE;
+    $params['display']       = VKXP_AUTHORIZE_DISPLAY;
+
+    // Redirect user to authorize page.
+    drupal_goto(VKXP_AUTHORIZE_URI . '?' . drupal_http_build_query($params));
+  }
 }
 
 /**
@@ -219,9 +202,11 @@ function vkxp_admin_node_settings() {
 function vkxp_admin_images_settings() {
   $form = array();
 
-  // Get node types that should be crossposted.
-  $selected_node_types = _vkxp_get_selected_node_types();
-  if (!$selected_node_types) {
+  // Get node types that could be crossposted.
+  $enabled_node_types = variable_get('vkxp_node_types', array());
+  $selected_types     = array_filter($enabled_node_types);
+
+  if (!$selected_types) {
     $form['image'] = array('#markup' => t('Please, select content types to see their image fiels'));
     return $form;
   }
@@ -229,7 +214,7 @@ function vkxp_admin_images_settings() {
   if (module_exists('image')) {
     $image_fields = array();
     $fields_info = field_info_fields();
-    foreach ($selected_node_types as $node_type) {
+    foreach ($selected_types as $node_type) {
 
       // Build fieldset for every selected node type.
       $node_types = node_type_get_names();
@@ -254,14 +239,14 @@ function vkxp_admin_images_settings() {
           '#title' => t('Select amount of images'),
           '#options' => drupal_map_assoc(array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)),
           '#default_value' => variable_get('vkxp_' . $node_type . '_image_amount', 0),
-          '#description' => t('Amount of images which will be posted to vkontakte.ru'),
+          '#description' => t('Amount of images which will be posted to vk.com'),
         );
         $form['vkxp_node_type_' . $node_type]['vkxp_' . $node_type . '_image_field'] = array(
           '#type' => 'select',
           '#title' => t('Select imagefield'),
           '#options' => $image_fields[$node_type],
           '#default_value' => variable_get('vkxp_' . $node_type . '_image_field', ''),
-          '#description' => t('Selected field will be posted with message to vkontakte.ru'),
+          '#description' => t('Selected field will be posted with message to vk.com'),
         );
       }
       else {

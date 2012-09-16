@@ -6,40 +6,49 @@
  */
 
 /**
- * Provides special form for captcha.
+ * Page callback.
+ * Processes request result from http://vk.com.
  */
-function vkxp_captcha_page() {
-  if (isset($_REQUEST['image']) && $_REQUEST['image']) {
-    $form = drupal_get_form('vkxp_captcha_form', $_REQUEST['image']);
-    return render($form);
+function vkxp_authorize() {
+
+  // If $_GET contains 'code' it means that authorization was successfull.
+  if (isset($_GET['code'])) {
+
+    $params = array();
+    $params['client_id']     = variable_get('vkxp_app_id', 0);
+    $params['client_secret'] = variable_get('vkxp_app_secret', 0);
+    $params['code']          = $_GET['code'];
+    $params['redirect_uri']  = url(VKXP_ACCESS_TOKEN_REDIRECT_URI, array('absolute' => TRUE));
+
+    // Make request to vk.com.
+    $result = vkxp_query('', $params, VKXP_ACCESS_TOKEN_URI);
+
+    if (isset($result['access_token'])) {
+
+      // Save new access token.
+      variable_set('vkxp_access_token', $result['access_token']);
+
+      // Write message in watchdog about event.
+      _vkxp_watchdog(array(
+        'text' => t('Access token was recieved from http://vk.com. Now you may post your nodes there.'),
+        'severity' => 'status'));
+    }
+    else {
+      _vkxp_watchdog(array(
+        'text' => t('Access token was not recieved from vkontakte. Error: !error (!error_description)',
+          array('!error' => $result['error'], '!error_description' => $result['error_description'])),
+        'severity' =>  'error'));
+    }
   }
-  else {
-    drupal_access_denied();
+
+  // If $_GET contains error it means that authorization failed.
+  elseif (isset($_GET['error'])) {
+    _vkxp_watchdog(array(
+      'text' => t('Access code was not recieved from vkontakte. Error: !error (!error_description)',
+        array('!error' => $_GET['error'], '!error_description'=> $_GET['error_description'])),
+      'severity' => 'error'));
   }
-}
 
-/**
- * Provides special form for captcha.
- */
-function vkxp_captcha_form($form, &$form_state) {
-
-  $image = $form_state['input']['image'];
-
-  $form['image'] = array(
-    '#type' => 'item',
-    '#markup' => '<img src = "' . $image . '" />',
-  );
-
-  $form['text'] = array(
-    '#type' => 'textfield',
-    '#size' => 10,
-    '#title' => t('Enter captcha text'),
-  );
-
-  $form['submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('Send data'),
-  );
-
-  return $form;
+  // Redirect user to settings page.
+  drupal_goto('admin/config/services/vkxp/main');
 }

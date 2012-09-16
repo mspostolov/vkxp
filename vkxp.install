@@ -31,6 +31,7 @@ function vkxp_requirements($phase) {
       );
     }
   }
+
   return $requirements;
 }
 
