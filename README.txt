@@ -11,7 +11,7 @@ Install
 
 5) Click 'Save configuration' button and give your application access to your web site.
 
-6) Don't forget to select node types (/admin/config/services/vkxp/node) and images (/admin/config/services/vkxp/images) that should be posted.
+6) Configure node type that should be crossposted on /admin/structure/types/manage/[NODE_TYPE] page.
 
 
 Usage

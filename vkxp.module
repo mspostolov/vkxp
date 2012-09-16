@@ -46,39 +46,13 @@ function vkxp_help($path) {
  */
 function vkxp_menu() {
 
+  // Module settings page.
   $items['admin/config/services/vkxp'] = array(
     'title'            => 'VKontakte CrossPoster',
     'page callback'    => 'drupal_get_form',
     'page arguments'   => array('vkxp_admin_main_settings'),
     'access arguments' => array('administer vkontakte crossposter'),
     'file'             => 'vkxp.admin.inc',
-  );
-
-  $items['admin/config/services/vkxp/main'] = array(
-    'title'            => 'Main settings',
-    'file'             => 'vkxp.admin.inc',
-    'type'             => MENU_DEFAULT_LOCAL_TASK,
-    'weight'           => 0,
-  );
-
-  $items['admin/config/services/vkxp/node'] = array(
-    'title'            => 'Node settings',
-    'page callback'    => 'drupal_get_form',
-    'page arguments'   => array('vkxp_admin_node_settings'),
-    'access arguments' => array('administer vkontakte crossposter'),
-    'file'             => 'vkxp.admin.inc',
-    'type'             => MENU_LOCAL_TASK,
-    'weight'           => 1,
-  );
-
-  $items['admin/config/services/vkxp/images'] = array(
-    'title'            => 'Images settings',
-    'page callback'    => 'drupal_get_form',
-    'page arguments'   => array('vkxp_admin_images_settings'),
-    'access arguments' => array('administer vkontakte crossposter'),
-    'file'             => 'vkxp.admin.inc',
-    'type'             => MENU_LOCAL_TASK,
-    'weight'           => 2,
   );
 
   // This page recieves authorization result from vk.com.
@@ -113,48 +87,26 @@ function vkxp_permission() {
  */
 function vkxp_form_alter(&$form, &$form_state, $form_id) {
 
-  // Get node types that could be crossposted.
-  $enabled_node_types = variable_get('vkxp_node_types', array());
-  $selected_types     = array_filter($enabled_node_types);
+  // Check if it is node add/edit form.
+  if (!empty($form['#node']->type)) {
+    if ($form_id == $form['#node']->type . '_node_form') {
 
-  foreach ($selected_types as $node_type) {
-    if ($form_id == $node_type . '_node_form') {
-      _vkxp_process_node_form($form);
+      // Check node type and user access to see if needs to process a node form.
+      $type_enabled = variable_get('vkxp_node_enabled_' . $form['#node']->type, 0);
+      $user_access  = user_access('post to vkontakte');
+
+      // If node type matches all requirements we have to add new fields to form.
+      if ($type_enabled && $user_access) {
+        module_load_include('forms.inc', 'vkxp');
+        _vkxp_process_node_form($form);
+      }
     }
   }
-}
 
-/**
- * Add vkxp fieldset to node forms.
- *
- * @param $form
- *   Node add/edit form.
- */
-function _vkxp_process_node_form(&$form) {
-
-  // Change node form only if user has access to crosspost nodes.
-  if (user_access('post to vkontakte')) {
-
-    $form['vkxp'] = array(
-      '#type'   => 'fieldset',
-      '#title'  => t('VKontakte CrossPoster'),
-      '#group'  => 'additional_settings',
-      '#weight' => -10,
-    );
-
-    $form['vkxp']['vkxp_post_this_node'] = array(
-      '#type'          => 'checkbox',
-      '#title'         => t('Post this node to vk.com'),
-      '#default_value' => variable_get('vkxp_enabled_default', 0),
-      '#description'   => t('After you submit this node it will be posted to http://vk.com.'),
-    );
-
-    // Disable crosspost if cURL library is not installed on a server.
-    if (!function_exists('curl_init')) {
-      $form['vkxp']['vkxp_post_this_node']['#disabled']    = TRUE;
-      $form['vkxp']['vkxp_post_this_node']['#value']       = 0;
-      $form['vkxp']['vkxp_post_this_node']['#description'] = t("You can't crosspost nodes until cURL library is not installed on your server.");
-    }
+  // Add module settings to node settings form.
+  if ($form_id == 'node_type_form') {
+    module_load_include('forms.inc', 'vkxp');
+    _vkxp_process_node_settings_form($form);
   }
 }
 
@@ -184,73 +136,116 @@ function vkxp_node_update($node) {
  */
 function _vkxp_process_node($node, $op) {
 
-  // Get node types that could be crossposted.
-  $enabled_node_types = variable_get('vkxp_node_types', array());
-  $selected_types     = array_filter($enabled_node_types);
+  // Get all flags to see if node could be crossposted.
+  $vkxp_enabled = variable_get('vkxp_node_enabled_' . $node->type, 0);
+  $access_token = variable_get('vkxp_access_token', '');
+  $user_access  = user_access('post to vkontakte');
+  $post_node    = isset($node->vkxp_post_this_node) ?  $node->vkxp_post_this_node : FALSE;
 
-  // If current node is in selected types list - crosspost it.
-  if (in_array($node->type, $selected_types)) {
+  // Check requiered data to post.
+  if ($vkxp_enabled && $access_token && $user_access && $post_node) {
 
-    // Collect data and check access to crosspost nodes.
-    $access_token = variable_get('vkxp_access_token', '');
-    $user_access  = user_access('post to vkontakte');
-    $post_node    = FALSE;
-
-    if (isset($node->vkxp_post_this_node)) {
-      $post_node = $node->vkxp_post_this_node;
+    // Clear cached data if user wants to add link to this page.
+    // If do not flush page cache, vkontakte may not post this node due to unaccessable node url.
+    $add_link_to_node = variable_get('vkxp_add_link', 0);
+    $cache_disabled   = variable_get('cache', 0) ? FALSE : TRUE;
+    if ($add_link_to_node && !$cache_disabled && $op == 'insert') {
+      cache_clear_all(NULL, 'cache_page');
     }
 
-    // Check requiered data to post.
-    if ($access_token && $user_access && $post_node) {
+    // Get node data that will be crossposted.
+    $message = _vkxp_get_node_message($node);
+    $images  = _vkxp_get_node_images($node);
+    $url     = url('node/' . $node->nid, array('absolute' => TRUE));
 
-      // Clear cached data if user wants to add link to this page.
-      // If do not flush page cache, vkontakte may not post this node due to unaccessable node url.
-      $add_link_to_node = variable_get('vkxp_add_link', 0);
-      $cache_disabled   = variable_get('cache', 0) ? FALSE : TRUE;
-      if ($add_link_to_node && !$cache_disabled && $op == 'insert') {
-        cache_clear_all(NULL, 'cache_page');
-      }
+    // Post node to vk.com.
+    _vkxp_post_to_wall($message, $images, $url);
+  }
+}
 
-      // Get absolute node link.
-      $url = url('node/' . $node->nid, array('absolute' => TRUE));
+/**
+ * Get images from node.
+ *
+ * @param $node
+ *   Node object that should be crossposted.
+ *
+ * @return array
+ *   Array with images for uploading.
+ */
+function _vkxp_get_node_images($node) {
+  $image_ids = '';
 
-      // Get message from node.
-      $post_object   = variable_get('vkxp_post_object', 'body');
-      if ($post_object == 'body') {
-        $body    = array_shift($node->body);
-        $message = trim(strip_tags($body[0]['value']));
-      }
-      elseif ($post_object == 'title') {
-        $message = trim(check_plain($node->title));
-      }
-      else {
-        $body    = array_shift($node->body);
-        $message = trim(check_plain($node->title)) . "\n\n" . trim(strip_tags($body[0]['value']));
-      }
+  // Load image amount that should be sent to vk.com.
+  $image_amount = variable_get('vkxp_node_image_limit_' . $node->type, 0);
+  if ($image_amount) {
 
-      // Trim message if needed.
-      $cut_message = variable_get('vkxp_cut_message', 1);
-      if ($cut_message) {
-        $length = variable_get('vkxp_cut_message_length', 255);
-        if (drupal_strlen($message) > $length) {
-          $message = drupal_substr($message, 0, $length - 3) . '...';
+    // Get node field name that contains image.
+    $field = variable_get('vkxp_node_image_field_' . $node->type, 0);
+
+    // Try to get images from node object.
+    $i = 0;
+    $items = field_get_items('node', $node, $field);
+    if (!empty($items) && is_array($items)) {
+      $images = array();
+      foreach ($items as $image) {
+        if (isset($image['fid'])) {
+
+          // If user set image limit we should check get only selected amount of images.
+          if ($i++ == $image_amount) {
+            break;
+          }
+
+          // Get real image path.
+          $uri = file_load($image['fid'])->uri;
+          $images[] = '@' . drupal_realpath($uri);
         }
       }
+    }
 
-      // Decode special symbols.
-      $message = html_entity_decode($message, ENT_QUOTES, 'UTF-8');
-      $message = htmlspecialchars_decode($message);
-
-      // Post node to vk.com.
-      $images    = _vkxp_get_node_images($node);
-      $image_ids = '';
-      if ($images) {
-        $upload_url = _vkxp_get_upload_server();
-        $image_ids  = _vkxp_upload_images($upload_url, $images);
-      }
-      _vkxp_post_to_wall($message, $url, $image_ids);
+    // Upload images to vk server.
+    if (!empty($images)) {
+      $upload_url = _vkxp_get_upload_server();
+      $image_ids  = _vkxp_upload_images($upload_url, $images);
     }
   }
+
+  return $image_ids;
+}
+
+/**
+ * Get message text from node.
+ *
+ * @param $node
+ *   Node object that should be crossposted.
+ *
+ * @return string
+ *   Message text.
+ */
+function _vkxp_get_node_message($node) {
+
+  // Get message source.
+  $message_field = variable_get('vkxp_node_message_field_' . $node->type, 'title');
+  if ($message_field == 'title') {
+    $message = $node->title;
+  }
+  else {
+    $item    = field_get_items('node', $node, $message_field);
+    $message = trim(strip_tags($item[0]['value']));
+  }
+
+  // Trim message if needed.
+  $message_length = variable_get('vkxp_node_message_length_' . $node->type, 255);
+  if ($message_length > 0) {
+    if (drupal_strlen($message) > $message_length) {
+      $message = drupal_substr($message, 0, $message_length - 3) . '...';
+    }
+  }
+
+  // Decode special symbols.
+  $message = html_entity_decode($message, ENT_QUOTES, 'UTF-8');
+  $message = htmlspecialchars_decode($message);
+
+  return $message;
 }
 
 /**
@@ -279,48 +274,6 @@ function vkxp_query($method, $params, $request_url = VKXP_API_REQUEST_URI) {
 
   // Return request result.
   return drupal_json_decode($result);
-}
-
-/**
- * Get images from selected imagefield.
- *
- * @param $node
- *   Node object that should be crossposted.
- *
- * @return array
- *   Array with images for uploading.
- */
-function _vkxp_get_node_images($node) {
-  $images = array();
-
-  // Load image amount that should be sent to vk.com.
-  $image_amount = variable_get('vkxp_' . $node->type . '_image_amount', 0);
-  if ($image_amount) {
-
-    // Get node field name that contains image.
-    $field = variable_get('vkxp_' . $node->type . '_image_field', '');
-
-    // Try to get images from node object.
-    $i = 0;
-    $items = field_get_items('node', $node, $field);
-    if (!empty($items) && is_array($items)) {
-      foreach ($items as $image) {
-        if (isset($image['fid'])) {
-
-          // If user set image limit we should check get only selected amount of images.
-          if ($i++ == $image_amount) {
-            break;
-          }
-
-          // Get real image path.
-          $uri = file_load($image['fid'])->uri;
-          $images[] = '@' . drupal_realpath($uri);
-        }
-      }
-    }
-  }
-
-  return $images;
 }
 
 /**
@@ -412,7 +365,7 @@ function _vkxp_upload_images($upload_url, $images) {
  * @return array
  *   Server response.
  */
-function _vkxp_post_to_wall($message, $url, $images = '') {
+function _vkxp_post_to_wall($message, $images, $url) {
   $params = array();
   $params['from_group'] = variable_get('vkxp_official', 1);
   if (variable_get('vkxp_wall_owner', 'group') == 'group') {
@@ -421,8 +374,9 @@ function _vkxp_post_to_wall($message, $url, $images = '') {
   else {
     $params['owner_id'] = variable_get('vkxp_group_id', '');
   }
-  $params['message'] = $message;
+  $params['message']     = $message;
   $params['attachments'] = $images;
+
   if (variable_get('vkxp_add_link', 0)) {
     if ($images) {
       $params['attachments'] .= ',' . $url;

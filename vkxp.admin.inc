@@ -1,8 +1,8 @@
 <?php
 
 /**
- * @file
- * Contains vkxp settings forms.
+ * @file vkxp.admin.inc
+ * Contains VKXP settings form.
  */
 
 /**
@@ -70,13 +70,6 @@ function vkxp_admin_main_settings($form, &$form_state) {
     '#collapsible' => TRUE,
   );
 
-  $form['vkxp_additional']['vkxp_enabled_default'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Checkbox "Post this node to vk.com" are checked by default'),
-    '#default_value' => variable_get('vkxp_enabled_default', 0),
-    '#description' => t('Check this if you want checkbox "Post this node to vk.com" in node forms was checked by default.')
-  );
-
   $form['vkxp_additional']['vkxp_official'] = array(
     '#type' => 'checkbox',
     '#title' => t('Write from group name'),
@@ -91,7 +84,7 @@ function vkxp_admin_main_settings($form, &$form_state) {
     '#description' => t('Check this if you want to post node url on vk wall.'),
   );
 
-  // Submitters.
+  // Submit buttons.
   $form['actions'] = array(
     '#type' => 'action',
   );
@@ -140,124 +133,4 @@ function vkxp_admin_main_settings_submit($form, &$form_state) {
     // Redirect user to authorize page.
     drupal_goto(VKXP_AUTHORIZE_URI . '?' . drupal_http_build_query($params));
   }
-}
-
-/**
- * Page callback.
- * Return form with node settings.
- */
-function vkxp_admin_node_settings() {
-
-  $form = array();
-
-  $form['node_types'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Node types'),
-  );
-
-  $form['node_types']['vkxp_node_types'] = array(
-    '#type' => 'checkboxes',
-    '#title' => t('Node types to crosspost'),
-    '#options' => node_type_get_names(),
-    '#default_value' => variable_get('vkxp_node_types', array()),
-  );
-
-  $form['vkxp_body'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Messages'),
-  );
-
-  $form['vkxp_body']['vkxp_post_object'] = array(
-    '#type' => 'select',
-    '#title' => t('Message body'),
-    '#description' => t('Select what to post as wall message'),
-    '#options' => array(
-      'title' => t('Node title'),
-      'body' => t('Node body'),
-      'title_body' => t('Node title and node body'),
-    ),
-    '#default_value' => variable_get('vkxp_post_object', 'body'),
-  );
-
-  $form['vkxp_body']['vkxp_cut_message'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Cut message'),
-    '#default_value' => variable_get('vkxp_cut_message', 1),
-  );
-
-  $form['vkxp_body']['vkxp_cut_message_length'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Cut if message length more than'),
-    '#field_suffix' => t('symbols'),
-    '#size' => 4,
-    '#default_value' => variable_get('vkxp_cut_message_length', 255),
-  );
-
-  return system_settings_form($form);
-}
-
-/**
- * Return form width vkxp image settings.
- */
-function vkxp_admin_images_settings() {
-  $form = array();
-
-  // Get node types that could be crossposted.
-  $enabled_node_types = variable_get('vkxp_node_types', array());
-  $selected_types     = array_filter($enabled_node_types);
-
-  if (!$selected_types) {
-    $form['image'] = array('#markup' => t('Please, select content types to see their image fiels'));
-    return $form;
-  }
-
-  if (module_exists('image')) {
-    $image_fields = array();
-    $fields_info = field_info_fields();
-    foreach ($selected_types as $node_type) {
-
-      // Build fieldset for every selected node type.
-      $node_types = node_type_get_names();
-      $form['vkxp_node_type_' . $node_type] = array(
-        '#type' => 'fieldset',
-        '#title' => $node_types[$node_type],
-      );
-
-      foreach ($fields_info as $field) {
-        if ($field['type'] == 'image' && isset($field['bundles']['node'])) {
-          $bundles = $field['bundles']['node'];
-          if (in_array($node_type, $bundles)) {
-            $image_fields[$node_type][$field['field_name']] = $field['field_name'];
-          }
-        }
-      }
-
-      // If imagefield for this node type found - build settings form for it.
-      if (isset($image_fields[$node_type])) {
-        $form['vkxp_node_type_' . $node_type]['vkxp_' . $node_type . '_image_amount'] = array(
-          '#type' => 'select',
-          '#title' => t('Select amount of images'),
-          '#options' => drupal_map_assoc(array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)),
-          '#default_value' => variable_get('vkxp_' . $node_type . '_image_amount', 0),
-          '#description' => t('Amount of images which will be posted to vk.com'),
-        );
-        $form['vkxp_node_type_' . $node_type]['vkxp_' . $node_type . '_image_field'] = array(
-          '#type' => 'select',
-          '#title' => t('Select imagefield'),
-          '#options' => $image_fields[$node_type],
-          '#default_value' => variable_get('vkxp_' . $node_type . '_image_field', ''),
-          '#description' => t('Selected field will be posted with message to vk.com'),
-        );
-      }
-      else {
-        $form['vkxp_node_type_' . $node_type]['empty_value'] = array('#markup' => t('This node types does not contain image fields'));
-      }
-    }
-  }
-  else {
-    $form['image'] = array('#markup' => t("You can't post images until IMAGE module is installed."));
-    return $form;
-  }
-
-  return system_settings_form($form);
 }

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * @file
+ * @file vkxp.api.php
  * Hooks provided by the vkxp module.
  */
 
