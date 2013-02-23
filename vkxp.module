@@ -106,6 +106,7 @@ function vkxp_form_alter(&$form, &$form_state, $form_id) {
       // Check node type and user access to see if needs to process a node form.
       $type_enabled = variable_get('vkxp_node_enabled_' . $form['#node']->type);
       $user_access  = user_access('post to vkontakte');
+      // @todo: Check for access token.
 
       // If node type matches all requirements we have to add new fields to form.
       if ($type_enabled && $user_access) {
@@ -127,7 +128,7 @@ function vkxp_form_alter(&$form, &$form_state, $form_id) {
  */
 function vkxp_node_insert($node) {
   // Post node to vk.com.
-  _vkxp_process_node($node, 'insert');
+  _vkxp_process_node($node);
 }
 
 /**
@@ -135,7 +136,7 @@ function vkxp_node_insert($node) {
  */
 function vkxp_node_update($node) {
   // Post node to vk.com.
-  _vkxp_process_node($node, 'update');
+  _vkxp_process_node($node);
 }
 
 /**
@@ -143,28 +144,17 @@ function vkxp_node_update($node) {
  *
  * @param $node
  *   Node object during insert/update.
- * @param $op
- *  Current node operation (insert or update).
  */
-function _vkxp_process_node($node, $op) {
+function _vkxp_process_node($node) {
 
   // Get all flags to see if node could be crossposted.
-  $vkxp_enabled = variable_get('vkxp_node_enabled_' . $node->type, 0);
+  $vkxp_enabled = variable_get('vkxp_node_enabled_' . $node->type);
   $access_token = variable_get('vkxp_access_token');
   $user_access  = user_access('post to vkontakte');
   $post_node    = isset($node->vkxp_post_this_node) ?  $node->vkxp_post_this_node : FALSE;
 
   // Check requiered data to post.
   if ($vkxp_enabled && $access_token && $user_access && $post_node) {
-
-    // Clear cached data if user wants to add link to this page.
-    // If do not flush page cache, vkontakte may not post this node due to unaccessable node url.
-    $add_link_to_node = variable_get('vkxp_add_link', FALSE);
-    $cache_disabled   = variable_get('cache', 0) ? FALSE : TRUE;
-    if ($add_link_to_node && !$cache_disabled && $op == 'insert') {
-      // @todo: flush only cache for current page?
-      cache_clear_all(NULL, 'cache_page');
-    }
 
     // Get node data that will be crossposted.
     $message = _vkxp_get_node_message($node);
@@ -248,10 +238,8 @@ function _vkxp_get_node_message($node) {
 
   // Trim message if needed.
   $message_length = variable_get('vkxp_node_message_length_' . $node->type, 255);
-  if ($message_length > 0) {
-    if (drupal_strlen($message) > $message_length) {
-      $message = drupal_substr($message, 0, $message_length - 3) . '...';
-    }
+  if (!empty($message_length ) && drupal_strlen($message) > $message_length) {
+    $message = drupal_substr($message, 0, $message_length - 3) . '...';
   }
 
   // Decode special symbols.

@@ -30,7 +30,7 @@ function _vkxp_process_node_settings_form(&$form) {
   $form['vkxp']['vkxp_node_enabled'] = array(
     '#type'          => 'checkbox',
     '#title'         => t('Enable VKontakte CrossPoster'),
-    '#default_value' => variable_get('vkxp_node_enabled_' . $node_type, 0),
+    '#default_value' => variable_get('vkxp_node_enabled_' . $node_type),
     '#description'   => t('Enable or disable crosspost for this node type.')
   );
 
@@ -38,7 +38,7 @@ function _vkxp_process_node_settings_form(&$form) {
   $form['vkxp']['vkxp_node_enabled_default'] = array(
     '#type' => 'checkbox',
     '#title' => t('Checkbox "Post this node to vk.com" are checked by default'),
-    '#default_value' => variable_get('vkxp_node_enabled_default_' . $node_type, 0),
+    '#default_value' => variable_get('vkxp_node_enabled_default_' . $node_type),
     '#description' => t('Check this if you want checkbox "Post this node to vk.com" in node forms was checked by default.')
   );
 
@@ -134,7 +134,7 @@ function _vkxp_process_node_form(&$form) {
   $form['vkxp']['vkxp_post_this_node'] = array(
     '#type'          => 'checkbox',
     '#title'         => t('Post this node to vk.com'),
-    '#default_value' => variable_get('vkxp_node_enabled_default_' . $node_type, 0),
+    '#default_value' => variable_get('vkxp_node_enabled_default_' . $node_type),
     '#description'   => t('After you submit this node it will be posted to http://vk.com.'),
   );
 
