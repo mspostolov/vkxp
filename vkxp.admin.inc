@@ -11,6 +11,19 @@
  */
 function vkxp_admin_main_settings($form, &$form_state) {
 
+  $form['vkxp_access_token'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Access token'),
+    '#collapsible' => TRUE,
+  );
+
+  $form['vkxp_access_token']['status'] = array(
+    '#type' => 'markup',
+    '#markup' => variable_get('vkxp_access_token') ?
+      '<span style="color:green;">' . t('Recieved') . '</span>' :
+      '<span style="color:red;">' . t('Not recieved') . '</span>'
+  );
+
   // Application settings.
   $form['vkxp_application'] = array(
     '#type' => 'fieldset',
@@ -102,7 +115,7 @@ function vkxp_admin_main_settings_validate($form, &$form_state) {
 }
 
 /**
- * Form for recieving access token from vk.com
+ * Form for recieving access token from VK.
  */
 function vkxp_admin_access_token($form, &$form_state) {
 
@@ -111,24 +124,12 @@ function vkxp_admin_access_token($form, &$form_state) {
   $form['#suffix'] = '</div>';
 
   // FIRST STEP.
-  // Getting authorize code from vk.com.
+  // Getting authorize code from VK.
   $params = array();
   $params['client_id']     = variable_get('vkxp_app_id');
   $params['scope']         = VKXP_AUTHORIZE_SCOPE;
   $params['redirect_uri']  = VKXP_AUTHORIZE_REDIRECT_URI;
   $params['response_type'] = VKXP_AUTHORIZE_RESPONSE_TYPE;
-
-  $form['access_token'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Access token'),
-  );
-
-  $form['access_token']['status'] = array(
-    '#type' => 'markup',
-    '#markup' => variable_get('vkxp_access_token') ?
-      '<span style="color:green;">' . t('Recieved') . '</span>' :
-      '<span style="color:red;">' . t('Not recieved') . '</span>'
-  );
 
   $form['new_access_token'] = array(
     '#type' => 'fieldset',
@@ -192,6 +193,9 @@ function vkxp_admin_access_token_submit($form, &$form_state) {
     _vkxp_watchdog($message);
 
     variable_set('vkxp_access_token', $data['access_token']);
+
+    // Redirect user to the settings page.
+    $form_state['redirect'] = 'admin/config/services/vkxp';
   }
   // Access token was not recieved.
   elseif (isset($data['error']) && isset($data['error_description'])) {

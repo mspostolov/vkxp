@@ -37,9 +37,9 @@ function _vkxp_process_node_settings_form(&$form) {
   // Enable default setting.
   $form['vkxp']['vkxp_node_enabled_default'] = array(
     '#type' => 'checkbox',
-    '#title' => t('Checkbox "Post this node to vk.com" are checked by default'),
+    '#title' => t('Checkbox "Post this node to VK" are checked by default'),
     '#default_value' => variable_get('vkxp_node_enabled_default_' . $node_type),
-    '#description' => t('Check this if you want checkbox "Post this node to vk.com" in node forms was checked by default.')
+    '#description' => t('Check this if you want checkbox "Post this node to VK" in node forms was checked by default.')
   );
 
   // Get information about node fields.
@@ -126,9 +126,9 @@ function _vkxp_process_node_form(&$form) {
 
   $form['vkxp']['vkxp_post_this_node'] = array(
     '#type'          => 'checkbox',
-    '#title'         => t('Post this node to vk.com'),
+    '#title'         => t('Post this node to VK'),
     '#default_value' => variable_get('vkxp_node_enabled_default_' . $form['#node']->type),
-    '#description'   => t('After you submit this node it will be posted to http://vk.com.'),
+    '#description'   => t('After you submit this node it will be posted to VK.'),
   );
 
   // Disable crosspost if cURL library is not installed on a server.
@@ -142,6 +142,6 @@ function _vkxp_process_node_form(&$form) {
   if (!variable_get('vkxp_access_token')) {
     $form['vkxp']['vkxp_post_this_node']['#disabled']    = TRUE;
     $form['vkxp']['vkxp_post_this_node']['#value']       = 0;
-    $form['vkxp']['vkxp_post_this_node']['#description'] = t("You can't crosspost nodes until access token not recieved from vk.com.");
+    $form['vkxp']['vkxp_post_this_node']['#description'] = t("You can't crosspost nodes until access token not recieved from VK.");
   }
 }
