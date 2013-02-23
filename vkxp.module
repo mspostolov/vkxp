@@ -95,31 +95,28 @@ function vkxp_permission() {
 }
 
 /**
- * Implements hook_form_alter().
+ * Implements hook_form_FORM_ID_alter().
+ * Add module settings to the node settings form.
  */
-function vkxp_form_alter(&$form, &$form_state, $form_id) {
+function vkxp_form_node_type_form_alter(&$form, &$form_state) {
+  form_load_include($form_state, 'forms.inc', 'vkxp');
+  _vkxp_process_node_settings_form($form);
+}
 
-  // Check if it is node add/edit form.
-  if (!empty($form['#node']->type)) {
-    if ($form_id == $form['#node']->type . '_node_form') {
+/**
+ * Implements hook_form_FORM_ID_alter().
+ * Alters node add/edit form.
+ */
+function vkxp_form_node_form_alter($form, &$form_state) {
+  // Check node type and user access to see if needs to process a node form.
+  $type_enabled = variable_get('vkxp_node_enabled_' . $form['#node']->type);
+  $user_access  = user_access('post to vkontakte');
+  // @todo: Check for access token.
 
-      // Check node type and user access to see if needs to process a node form.
-      $type_enabled = variable_get('vkxp_node_enabled_' . $form['#node']->type);
-      $user_access  = user_access('post to vkontakte');
-      // @todo: Check for access token.
-
-      // If node type matches all requirements we have to add new fields to form.
-      if ($type_enabled && $user_access) {
-        form_load_include($form_state, 'forms.inc', 'vkxp');
-        _vkxp_process_node_form($form);
-      }
-    }
-  }
-
-  // Add module settings to node settings form.
-  if ($form_id == 'node_type_form') {
+  // If node type matches all requirements we have to add new fields to form.
+  if ($type_enabled && $user_access) {
     form_load_include($form_state, 'forms.inc', 'vkxp');
-    _vkxp_process_node_settings_form($form);
+    _vkxp_process_node_form($form);
   }
 }
 
