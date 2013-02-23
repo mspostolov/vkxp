@@ -13,8 +13,8 @@ function vkxp_requirements($phase) {
 
   // Ensure translations don't break at install time.
   $t = get_t();
-  
-  if ($phase == 'runtime') {    
+
+  if ($phase == 'runtime') {
     // Check for presence of curl support.
     if (!function_exists('curl_init')) {
       $requirements['vkxp_curl'] = array(
@@ -48,4 +48,17 @@ function vkxp_uninstall() {
 
   // Flush bootstrap variables cache.
   cache_clear_all('variables', 'cache_bootstrap');
+}
+
+/**
+ * Changes name of variable that stores owner ID.
+ */
+function vkxp_update_7212() {
+  $owner_id = variable_get('vkxp_group_id');
+
+  if (!empty($owner_id)) {
+    variable_set('vkxp_owner_id', $owner_id);
+  }
+
+  variable_del('vkxp_group_id');
 }
