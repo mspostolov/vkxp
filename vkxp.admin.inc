@@ -200,6 +200,9 @@ function vkxp_admin_access_token_submit($form, &$form_state) {
       'severity' => 'error',
     );
     _vkxp_watchdog($message);
+
+    // Remove variable if user not allowed to get a new access token.
+    variable_del('vkxp_access_token');
   }
 
   return $form;
