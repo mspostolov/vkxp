@@ -181,19 +181,7 @@ function vkxp_admin_access_token_submit($form, &$form_state) {
   $params['code']          = $form_state['values']['code'];
   $params['redirect_uri']  = VKXP_ACCESS_TOKEN_REDIRECT_URI;
 
-  // Send request for a new access token.
-  $response = drupal_http_request(VKXP_ACCESS_TOKEN_URI . '?' . http_build_query($params));
-
-  if (!empty($response->data)) {
-    $data = drupal_json_decode($response->data);
-  }
-  elseif (!empty($response->error)) {
-    $message = array(
-      'text'     => $response->error,
-      'severity' => 'error',
-    );
-    _vkxp_watchdog($message);
-  }
+  $data = vkxp_query('', $params, VKXP_ACCESS_TOKEN_URI);
 
   // Access token was recieved.
   if (!empty($data['access_token'])) {

@@ -277,7 +277,6 @@ function vkxp_query($method, $params, $request_url = VKXP_API_REQUEST_URI) {
   drupal_alter('vkxp_query', $query);
 
   // cURL request to vk.com.
-  // @TODO: try to change cURL support to drupal_http_request().
   $curl = curl_init();
   curl_setopt ($curl, CURLOPT_URL, $query['request_url'] . '/' . $query['method']);
   curl_setopt ($curl, CURLOPT_POST, 1);
