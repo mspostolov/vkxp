@@ -16,24 +16,25 @@ function vkxp_admin_main_settings($form, &$form_state) {
     '#type' => 'fieldset',
     '#title' => t('Application settings'),
     '#collapsible' => TRUE,
-    '#description' => t('Note: You have to !create standalone vkontakte application to make this module work.',
-      array('!create' => l(t('create'), 'http://vk.com/editapp?act=create', array('attributes' => array('target' => '_blank'))))),
+    '#description' => t('Note: You have to <a href="@url" target="_blank">create</a> a <strong>standalone</strong> application to make this module work.',
+      array('@url' => 'http://vk.com/editapp?act=create')),
   );
 
   $form['vkxp_application']['vkxp_app_id'] = array(
     '#type' => 'textfield',
     '#title' => t('Application ID'),
-    '#required' => TRUE,
-    '#default_value' => variable_get('vkxp_app_id', ''),
     '#description' => t('ID of vk application.'),
+    '#default_value' => variable_get('vkxp_app_id'),
+    '#required' => TRUE,
+    '#element_validate' => array('element_validate_integer_positive'),
   );
 
   $form['vkxp_application']['vkxp_app_secret'] = array(
     '#type' => 'textfield',
     '#title' => t('Application secret code'),
+    '#description' => t('Secret code of vk application.'),
+    '#default_value' => variable_get('vkxp_app_secret'),
     '#required' => TRUE,
-    '#default_value' => variable_get('vkxp_app_secret', ''),
-    '#description' => t('Secret code of vk application.')
   );
 
   // Owner settings.
@@ -44,23 +45,24 @@ function vkxp_admin_main_settings($form, &$form_state) {
     '#collapsible' => TRUE,
   );
 
-  $form['vkxp_owner']['vkxp_group_id'] = array(
+  $form['vkxp_owner']['vkxp_owner_id'] = array(
     '#type' => 'textfield',
     '#title' => t('Owner ID'),
-    '#required' => TRUE,
-    '#default_value' => variable_get('vkxp_group_id', ''),
     '#description' => t('User ID or Group ID.'),
+    '#default_value' => variable_get('vkxp_owner_id', ''),
+    '#required' => TRUE,
+    '#element_validate' => array('element_validate_integer_positive'),
   );
 
   $form['vkxp_owner']['vkxp_wall_owner'] = array(
     '#type' => 'select',
     '#title' => t('Select owner type'),
+    '#description' => t('Who owns the ID above.'),
     '#options' => array(
       'group' => t('Group'),
       'user' => t('User'),
     ),
     '#default_value' => variable_get('vkxp_wall_owner', 'group'),
-    '#description' => t('Who owns the above ID.'),
   );
 
   // Additional settings.
@@ -73,64 +75,144 @@ function vkxp_admin_main_settings($form, &$form_state) {
   $form['vkxp_additional']['vkxp_official'] = array(
     '#type' => 'checkbox',
     '#title' => t('Write from group name'),
-    '#default_value' => variable_get('vkxp_official', 1),
     '#description' => t('Check this if you want to post messages from group name.'),
+    '#default_value' => variable_get('vkxp_official', TRUE),
   );
 
   $form['vkxp_additional']['vkxp_add_link'] = array(
     '#type' => 'checkbox',
     '#title' => t('Add link on wall to posted page'),
-    '#default_value' => variable_get('vkxp_add_link', 0),
+    '#default_value' => variable_get('vkxp_add_link', FALSE),
     '#description' => t('Check this if you want to post node url on vk wall.'),
   );
 
-  // Submit buttons.
-  $form['actions'] = array(
+  return system_settings_form($form);
+}
+
+/**
+ * Validates main settings form.
+ */
+function vkxp_admin_main_settings_validate($form, &$form_state) {
+  $values = &$form_state['values'];
+
+  // Remove spaces. Just in case of small user mistake.
+  $values['vkxp_app_id']     = trim($values['vkxp_app_id']);
+  $values['vkxp_app_secret'] = trim($values['vkxp_app_secret']);
+  $values['vkxp_app_secret'] = trim($values['vkxp_app_secret']);
+}
+
+/**
+ * Form for recieving access token from vk.com
+ */
+function vkxp_admin_access_token($form, &$form_state) {
+
+  $html_id = drupal_html_id('access-token-form');
+  $form['#prefix'] = '<div id="' . $html_id . '">';
+  $form['#suffix'] = '</div>';
+
+  // FIRST STEP.
+  // Getting authorize code from vk.com.
+  $params = array();
+  $params['client_id']     = variable_get('vkxp_app_id');
+  $params['scope']         = VKXP_AUTHORIZE_SCOPE;
+  $params['redirect_uri']  = VKXP_AUTHORIZE_REDIRECT_URI;
+  $params['response_type'] = VKXP_AUTHORIZE_RESPONSE_TYPE;
+
+  $form['access_token'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Access token'),
+  );
+
+  $form['access_token']['status'] = array(
+    '#type' => 'markup',
+    '#markup' => variable_get('vkxp_access_token') ?
+      '<span style="color:green;">' . t('Recieved') . '</span>' :
+      '<span style="color:red;">' . t('Not recieved') . '</span>'
+  );
+
+  $form['new_access_token'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Recieve new access token'),
+    '#collapsible' => TRUE,
+    '#collapsed' => variable_get('vkxp_access_token') ? TRUE : FALSE,
+  );
+
+  $form['new_access_token']['link'] = array(
+    '#theme' => 'link',
+    '#text' => t('Get code'),
+    '#path' => VKXP_AUTHORIZE_URI,
+    '#options' => array(
+      'query' => $params,
+      'html' => FALSE,
+      'attributes' => array(
+        'target' => '_blank',
+      ),
+    ),
+  );
+
+  $form['new_access_token']['code'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Code'),
+    '#description' => t('Copy #code param from the URL here.'),
+  );
+
+  $form['new_access_token']['actions'] = array(
     '#type' => 'action',
   );
 
-  $form['actions']['submit'] = array(
+  $form['new_access_token']['actions']['submit'] = array(
     '#type' => 'submit',
-    '#value' => t('Save settings'),
-  );
-
-  $form['actions']['reset'] = array(
-    '#type' => 'submit',
-    '#value' => t('Recieve new access token'),
+    '#value' => t('Get access token'),
   );
 
   return $form;
 }
 
 /**
- * Submit callback for vkxp main settings form.
+ * Second step of getting access token.
  */
-function vkxp_admin_main_settings_submit($form, &$form_state) {
-  $values = &$form_state['values'];
+function vkxp_admin_access_token_submit($form, &$form_state) {
 
-  // Trim values just in case.
-  $values['vkxp_app_id']     = trim($values['vkxp_app_id']);
-  $values['vkxp_app_secret'] = trim($values['vkxp_app_secret']);
+  // Collect params for authorization.
+  // See http://vk.com/developers.php?oid=-1&p=%D0%90%D0%B2%D1%82%D0%BE%D1%80%D0%B8%D0%B7%D0%B0%D1%86%D0%B8%D1%8F_%D1%81%D0%B0%D0%B9%D1%82%D0%BE%D0%B2
+  $params = array();
+  $params['client_id']     = variable_get('vkxp_app_id');
+  $params['client_secret'] = variable_get('vkxp_app_secret');
+  $params['code']          = $form_state['values']['code'];
+  $params['redirect_uri']  = VKXP_ACCESS_TOKEN_REDIRECT_URI;
 
-  // If application ID or application secret key was changed we should get new access token.
-  $app_id_changed = variable_get('vkxp_app_id', 0)     != $values['vkxp_app_id'];
-  $secret_changed = variable_get('vkxp_app_secret', 0) != $values['vkxp_app_secret'];
-  $reset_clicked  = $values['op'] == $values['reset'];
+  // Send request for a new access token.
+  $response = drupal_http_request(VKXP_ACCESS_TOKEN_URI . '?' . http_build_query($params));
 
-  // Save form state values.
-  system_settings_form_submit($form, $form_state);
-
-  if ($app_id_changed || $secret_changed || $reset_clicked) {
-
-    // Build params for http://vk.com to get new access token.
-    $params = array();
-    $params['client_id']     = $form_state['values']['vkxp_app_id'];
-    $params['scope']         = VKXP_AUTHORIZE_SCOPE;
-    $params['redirect_uri']  = url(VKXP_AUTHORIZE_REDIRECT_URI, array('absolute' => TRUE));
-    $params['response_type'] = VKXP_AUTHORIZE_RESPONSE_TYPE;
-    $params['display']       = VKXP_AUTHORIZE_DISPLAY;
-
-    // Redirect user to authorize page.
-    drupal_goto(VKXP_AUTHORIZE_URI . '?' . drupal_http_build_query($params));
+  if (!empty($response->data)) {
+    $data = drupal_json_decode($response->data);
   }
+  elseif (!empty($response->error)) {
+    $message = array(
+      'text'     => $response->error,
+      'severity' => 'error',
+    );
+    _vkxp_watchdog($message);
+  }
+
+  // Access token was recieved.
+  if (!empty($data['access_token'])) {
+    $message = array(
+      'text'     => t('Access token was successfully recieved.'),
+      'severity' => 'status',
+    );
+    _vkxp_watchdog($message);
+
+    variable_set('vkxp_access_token', $data['access_token']);
+  }
+  // Access token was not recieved.
+  elseif (isset($data['error']) && isset($data['error_description'])) {
+    $message = array(
+      'text'     => t('Access token was not recieved. Reason: %error', array('%error' => check_plain($data['error_description']))),
+      'severity' => 'error',
+    );
+    _vkxp_watchdog($message);
+  }
+
+  return $form;
 }
