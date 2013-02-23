@@ -108,10 +108,15 @@ function vkxp_form_node_type_form_alter(&$form, &$form_state) {
  * Alters node add/edit form.
  */
 function vkxp_form_node_form_alter($form, &$form_state) {
-  // Check node type and user access to see if needs to process a node form.
+
+  // Do not process node form if it is not contains node type.
+  if (empty($form['#node']->type)) {
+    return;
+  }
+
+  // Check node type and user access to see whether we should process a node form.
   $type_enabled = variable_get('vkxp_node_enabled_' . $form['#node']->type);
   $user_access  = user_access('post to vkontakte');
-  // @todo: Check for access token.
 
   // If node type matches all requirements we have to add new fields to form.
   if ($type_enabled && $user_access) {

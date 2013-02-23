@@ -117,13 +117,6 @@ function _vkxp_process_node_settings_form(&$form) {
  */
 function _vkxp_process_node_form(&$form) {
 
-  // Do not process node form if it do not contain node type.
-  if (empty($form['#node']->type)) {
-    return;
-  }
-
-  $node_type = $form['#node']->type;
-
   $form['vkxp'] = array(
     '#type'   => 'fieldset',
     '#title'  => t('VKontakte CrossPoster'),
@@ -134,7 +127,7 @@ function _vkxp_process_node_form(&$form) {
   $form['vkxp']['vkxp_post_this_node'] = array(
     '#type'          => 'checkbox',
     '#title'         => t('Post this node to vk.com'),
-    '#default_value' => variable_get('vkxp_node_enabled_default_' . $node_type),
+    '#default_value' => variable_get('vkxp_node_enabled_default_' . $form['#node']->type),
     '#description'   => t('After you submit this node it will be posted to http://vk.com.'),
   );
 
@@ -143,5 +136,12 @@ function _vkxp_process_node_form(&$form) {
     $form['vkxp']['vkxp_post_this_node']['#disabled']    = TRUE;
     $form['vkxp']['vkxp_post_this_node']['#value']       = 0;
     $form['vkxp']['vkxp_post_this_node']['#description'] = t("You can't crosspost nodes until cURL library is not installed on your server.");
+  }
+
+  // Disable crosspost if no access token recieved.
+  if (!variable_get('vkxp_access_token')) {
+    $form['vkxp']['vkxp_post_this_node']['#disabled']    = TRUE;
+    $form['vkxp']['vkxp_post_this_node']['#value']       = 0;
+    $form['vkxp']['vkxp_post_this_node']['#description'] = t("You can't crosspost nodes until access token not recieved from vk.com.");
   }
 }
