@@ -109,8 +109,7 @@ function vkxp_form_alter(&$form, &$form_state, $form_id) {
 
       // If node type matches all requirements we have to add new fields to form.
       if ($type_enabled && $user_access) {
-        // @todo: form load include.
-        module_load_include('forms.inc', 'vkxp');
+        form_load_include($form_state, 'forms.inc', 'vkxp');
         _vkxp_process_node_form($form);
       }
     }
@@ -118,8 +117,7 @@ function vkxp_form_alter(&$form, &$form_state, $form_id) {
 
   // Add module settings to node settings form.
   if ($form_id == 'node_type_form') {
-    // @todo: form load include.
-    module_load_include('forms.inc', 'vkxp');
+    form_load_include($form_state, 'forms.inc', 'vkxp');
     _vkxp_process_node_settings_form($form);
   }
 }
