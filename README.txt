@@ -24,7 +24,7 @@ Install
 Russian documentation
 =====================
 
-Documentation in Russian can be found here http://drupalace.ru/vkontakte-crossposter-2-vozvrashchenie.
+Documentation in Russian can be found here http://drupalace.ru/vkontakte-crossposter-2-voskreshenie.
 
 Usage
 =============
