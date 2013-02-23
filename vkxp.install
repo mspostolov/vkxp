@@ -19,7 +19,8 @@ function vkxp_requirements($phase) {
     if (!function_exists('curl_init')) {
       $requirements['vkxp_curl'] = array(
         'title' => $t('cURL Support for VKontakte CrossPoster'),
-        'value' => $t('VKontakte CrossPoster requires <a href="http://php.net/manual/en/book.curl.php">cURL support in PHP</a> to function fully.  Without this, contents will not be posted to vkontakte.'),
+        'value' => $t('VKontakte CrossPoster requires <a href="@url">cURL support in PHP</a> to function fully.  Without this, contents will not be posted to vkontakte.',
+          array('@url' => 'http://php.net/manual/en/book.curl.php')),
         'severity' => REQUIREMENT_ERROR,
       );
     }
