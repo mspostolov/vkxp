@@ -3,7 +3,7 @@
 Drupal.behaviors.vkxp = function (context) {
   if (Drupal && Drupal.settings && Drupal.settings.vkxp) {
 
-    $.getScript('http://vk.com/js/api/openapi.js', function() {
+    $.getScript('//vk.com/js/api/openapi.js', function() {
 
       // Initialize VK OPEN API
       VK.init({
