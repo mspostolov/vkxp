@@ -2,6 +2,4 @@ name = VKontakte CrossPoster
 description = Allows to send data automatically to vk.com
 package = VK
 core = 6.x
-
-dependencies[] = jquery_ui
-dependencies[] = jquery_update
+dependencies[] = content

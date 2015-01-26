@@ -13,8 +13,8 @@ function vkxp_requirements($phase) {
 
   // Ensure translations don't break at install time.
   $t = get_t();
-  
-  if ($phase == 'runtime') {    
+
+  if ($phase == 'runtime') {
     // Check for presence of curl support.
     if (!function_exists('curl_init')) {
       $requirements['vkxp_curl'] = array(
