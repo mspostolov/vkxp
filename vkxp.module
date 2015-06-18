@@ -320,7 +320,7 @@ function _vkxp_get_node_images($node) {
 
           // Get real image path.
           $uri = file_load($image['fid'])->uri;
-          $images[] = '@' . drupal_realpath($uri);
+          $images[] = drupal_realpath($uri);
         }
       }
     }
@@ -386,6 +386,12 @@ function vkxp_query($method, $params, $request_url = VKXP_API_REQUEST_URI) {
   $curl = curl_init();
   curl_setopt ($curl, CURLOPT_URL, $query['request_url'] . '/' . $query['method']);
   curl_setopt ($curl, CURLOPT_POST, 1);
+  if (class_exists('CURLFile') && array_key_exists('file', $query['params'])){
+    $query['params']['file'] = new CURLFile($query['params']['file']);
+  }
+  elseif (array_key_exists('file', $query['params'])) {
+    $query['params']['file'] = '@' . $query['params']['file'];
+  }
   curl_setopt ($curl, CURLOPT_POSTFIELDS, $query['params']);
   curl_setopt ($curl, CURLOPT_SSL_VERIFYPEER, FALSE);
   curl_setopt ($curl, CURLOPT_RETURNTRANSFER, 1);
@@ -405,10 +411,10 @@ function vkxp_query($method, $params, $request_url = VKXP_API_REQUEST_URI) {
 function _vkxp_get_upload_server() {
   $params = array();
   if (variable_get('vkxp_wall_owner', 'group') == 'group') {
-    $params['gid'] = variable_get('vkxp_owner_id', '');
+    $params['group_id'] = variable_get('vkxp_owner_id', '');
   }
   else {
-    $params['uid'] = variable_get('vkxp_owner_id', '');
+    $params['user_id'] = variable_get('vkxp_owner_id', '');
   }
   $params['access_token'] = variable_get('vkxp_access_token', '');
   $result = vkxp_query('photos.getWallUploadServer', $params);
@@ -443,7 +449,7 @@ function _vkxp_upload_images($upload_url, $images) {
   foreach ($images as $image) {
 
     // Upload photo to vk server.
-    $upload_result = vkxp_query('', array('photo' => $image), $upload_url);
+    $upload_result = vkxp_query('', array('file' => $image), $upload_url);
 
     // If photo was uploaded it should be saved.
     if (isset($upload_result['server']) && isset($upload_result['photo']) && isset($upload_result['hash'])) {
@@ -455,10 +461,10 @@ function _vkxp_upload_images($upload_url, $images) {
 
       // Get owner ID depends on its type.
       if (variable_get('vkxp_wall_owner', 'group') == 'group') {
-        $params['gid'] = variable_get('vkxp_owner_id', '');
+        $params['group_id'] = variable_get('vkxp_owner_id', '');
       }
       else {
-        $params['uid'] = variable_get('vkxp_owner_id', '');
+        $params['user_id'] = variable_get('vkxp_owner_id', '');
       }
 
       // Save uploaded images.
@@ -467,6 +473,12 @@ function _vkxp_upload_images($upload_url, $images) {
       // If image was successfully saved it returns photo ID in format 'photoXXXXXXX_XXXXXXX'.
       if (isset($save_result['response'][0]['id'])) {
         $image_ids[] = $save_result['response'][0]['id'];
+      }
+      elseif ($save_result['error']) {
+        _vkxp_watchdog(array(
+          'text' => t('Error: !error',
+            array('!error' => $save_result['error']['error_msg'])),
+          'severity' => 'error'));
       }
     }
   }
