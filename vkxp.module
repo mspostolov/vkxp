@@ -130,15 +130,126 @@ function vkxp_form_node_form_alter(&$form, &$form_state) {
  */
 function vkxp_node_insert($node) {
   // Post node to VK.
-  _vkxp_process_node($node);
+  if (_vkxp_get_acces_crossposted($node) && $node->status) {
+    $params = _vkxp_process_node($node);
+
+    // Send query to VK and return result.
+    $result = vkxp_query('wall.post', $params);
+    if ($result['response']['post_id']){
+      drupal_set_message(t('Post published successfully on vk.com'), 'status');
+      db_insert('vkxp')
+        ->fields(array(
+          'nid' => $node->nid,
+          'pid' => $result['response']['post_id'],
+        ))
+        ->execute();
+    }
+    elseif ($result['error']) {
+      _vkxp_watchdog(array(
+        'text' => t('Error: !error',
+          array('!error' => $result['error']['error_msg'])),
+        'severity' => 'error'));
+    }
+  }
 }
 
 /**
  * Implements hook_node_update().
  */
 function vkxp_node_update($node) {
-  // Post node to VK.
-  _vkxp_process_node($node);
+
+  $post_id = db_select('vkxp', 'v')
+    ->fields('v', array('pid'))
+    ->condition('v.nid', $node->nid)
+    ->execute()
+    ->fetchField();
+
+  if ($post_id) {
+    if (_vkxp_get_acces_crossposted($node)) {
+      if ($node->status) {
+        // Update post on VK.
+        $params = _vkxp_process_node($node);
+        $params['post_id'] = $post_id;
+
+        // Send query to VK and return result.
+        $result = vkxp_query('wall.edit', $params);
+        if ($result['response']) {
+          drupal_set_message(t('Post updated successfully on vk.com'), 'status');
+        }
+        elseif ($result['error']) {
+          _vkxp_watchdog(array(
+            'text' => t('Error: !error',
+              array('!error' => $result['error']['error_msg'])),
+            'severity' => 'error'
+          ));
+        }
+      }
+      else {
+        // Delete post on VK
+        vkxp_node_delete($node);
+      }
+    }
+  }
+  else {
+    // Post node to VK.
+    vkxp_node_insert($node);
+  }
+}
+
+/**
+ * Implements hook_node_delete().
+ */
+function vkxp_node_delete($node) {
+
+  $post_id = db_select('vkxp', 'v')
+    ->fields('v', array('pid'))
+    ->condition('v.nid', $node->nid)
+    ->execute()
+    ->fetchField();
+
+  if ($post_id){
+    if (variable_get('vkxp_wall_owner', 'group') == 'group') {
+      $params['owner_id'] = '-' . variable_get('vkxp_owner_id', '');
+    }
+    else {
+      $params['owner_id'] = variable_get('vkxp_owner_id', '');
+    }
+    $params['post_id'] = $post_id;
+    $params['access_token'] = variable_get('vkxp_access_token');
+
+    // Delete post on VK.
+    $result = vkxp_query('wall.delete', $params);
+
+    if ($result['response']){
+      drupal_set_message(t('Post deleted successfully on vk.com'), 'status');
+      db_delete('vkxp')
+        ->condition('nid', $node->nid)
+        ->execute();
+    }
+    elseif ($result['error']) {
+      _vkxp_watchdog(array(
+        'text' => t('Error: !error',
+          array('!error' => $result['error']['error_msg'])),
+        'severity' => 'error'));
+    }
+  }
+}
+
+/**
+ * Get all flags to see if node could be crossposted.
+ *
+ *  @param  $node
+ *   Node object
+ *
+ * @return bool
+ *   TRUE or FALSE send node to VK
+ */
+function _vkxp_get_acces_crossposted($node){
+  $vkxp_enabled = variable_get('vkxp_node_enabled_' . $node->type);
+  $access_token = variable_get('vkxp_access_token');
+  $user_access  = user_access('post to vkontakte');
+  $post_node    = isset($node->vkxp_post_this_node) ?  $node->vkxp_post_this_node : FALSE;
+  return $vkxp_enabled && $access_token && $user_access && $post_node;
 }
 
 /**
@@ -146,26 +257,33 @@ function vkxp_node_update($node) {
  *
  * @param $node
  *   Node object during insert/update.
+ *
+ * @return array
+ *   Array with params post to VK
  */
 function _vkxp_process_node($node) {
 
-  // Get all flags to see if node could be crossposted.
-  $vkxp_enabled = variable_get('vkxp_node_enabled_' . $node->type);
-  $access_token = variable_get('vkxp_access_token');
-  $user_access  = user_access('post to vkontakte');
-  $post_node    = isset($node->vkxp_post_this_node) ?  $node->vkxp_post_this_node : FALSE;
+  // Get node data that will be crossposted.
+  $message = _vkxp_get_node_message($node);
+  $images  = _vkxp_get_node_images($node);
+  $url     = url('node/' . $node->nid, array('absolute' => TRUE));
 
-  // Check requiered data to post.
-  if ($vkxp_enabled && $access_token && $user_access && $post_node) {
-
-    // Get node data that will be crossposted.
-    $message = _vkxp_get_node_message($node);
-    $images  = _vkxp_get_node_images($node);
-    $url     = url('node/' . $node->nid, array('absolute' => TRUE));
-
-    // Post node to VK.
-    _vkxp_post_to_wall($message, $images, $url);
+  $params = array();
+  $params['from_group'] = variable_get('vkxp_official', TRUE);
+  if (variable_get('vkxp_wall_owner', 'group') == 'group') {
+    $params['owner_id'] = '-' . variable_get('vkxp_owner_id', '');
   }
+  else {
+    $params['owner_id'] = variable_get('vkxp_owner_id', '');
+  }
+  $params['message']     = $message;
+  $params['attachments'] = $images;
+
+  if (variable_get('vkxp_add_link', FALSE)) {
+    $params['attachments'] .= !empty($images) ? ',' . $url : $url;
+  }
+  $params['access_token'] = variable_get('vkxp_access_token');
+  return $params;
 }
 
 /**
@@ -356,39 +474,6 @@ function _vkxp_upload_images($upload_url, $images) {
   return !empty($image_ids) ? implode (',', $image_ids) : '';
 }
 
-/**
- * Post node message with uploaded images to wall.
- *
- * @param  $message
- *   Text to post.
- * @param  $images
- *   String with photo IDs to post.
- * @param  $url
- *   Absolute link to posted node.
- *
- * @return array
- *   Server response.
- */
-function _vkxp_post_to_wall($message, $images, $url) {
-  $params = array();
-  $params['from_group'] = variable_get('vkxp_official', TRUE);
-  if (variable_get('vkxp_wall_owner', 'group') == 'group') {
-    $params['owner_id'] = '-' . variable_get('vkxp_owner_id', '');
-  }
-  else {
-    $params['owner_id'] = variable_get('vkxp_owner_id', '');
-  }
-  $params['message']     = $message;
-  $params['attachments'] = $images;
-
-  if (variable_get('vkxp_add_link', FALSE)) {
-    $params['attachments'] .= !empty($images) ? ',' . $url : $url;
-  }
-  $params['access_token'] = variable_get('vkxp_access_token');
-
-  // Send query to VK and return result.
-  return vkxp_query('wall.post', $params);
-}
 
 /**
  * Log messages and print it on the screen.

@@ -37,6 +37,31 @@ function vkxp_requirements($phase) {
 }
 
 /**
+ * Implements hook_schema().
+ */
+function vkxp_schema() {
+  $schema['vkxp'] = array(
+    'description' => 'Value for node nid in post VK',
+    'fields' => array(
+      'nid' => array(
+        'description' => 'Node ID',
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+      'pid' => array(
+        'description' => 'Post ID',
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+    ),
+    'indexes' => array(
+      'nid' => array('nid'),
+    ),
+  );
+  return $schema;
+}
+
+/**
  * Implements hook_uninstall().
  */
 function vkxp_uninstall() {
@@ -61,4 +86,30 @@ function vkxp_update_7212() {
   }
 
   variable_del('vkxp_group_id');
+}
+
+/**
+ * Implements hook_update_N().
+ */
+function vkxp_update_7300() {
+  if (!db_table_exists('vkxp')) {
+    db_create_table('vkxp', array(
+      'description' => 'Value for node nid in post VK',
+      'fields' => array(
+        'nid' => array(
+          'description' => 'Node ID',
+          'type' => 'int',
+          'not null' => TRUE,
+        ),
+        'pid' => array(
+          'description' => 'Post ID',
+          'type' => 'int',
+          'not null' => TRUE,
+        ),
+      ),
+      'indexes' => array(
+        'nid' => array('nid'),
+      ),
+    ));
+  }
 }
