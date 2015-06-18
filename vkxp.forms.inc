@@ -45,14 +45,10 @@ function _vkxp_process_node_settings_form(&$form) {
   // Get information about node fields.
   $fields_info = field_info_instances('node', $node_type);
 
-  // Collect all text and image fields.
-  $text_fields  = array('title' => t('Title'));
+  // Collect all image fields.
   $image_fields = array(0 => t('- None -'));
   foreach ($fields_info as $field_name => $field_instance) {
-    if ($field_instance['widget']['module'] == 'text') {
-      $text_fields[$field_name] = $field_instance['label'] . ' (' . $field_name . ')';
-    }
-    elseif ($field_instance['widget']['module'] == 'image') {
+    if ($field_instance['widget']['module'] == 'image') {
       $image_fields[$field_name] = $field_instance['label'] . ' (' . $field_name . ')';
     }
   }
@@ -65,12 +61,20 @@ function _vkxp_process_node_settings_form(&$form) {
 
   // Message field.
   $form['vkxp']['vkxp_body']['vkxp_node_message_field'] = array(
-    '#type'          => 'select',
-    '#title'         => t('Message source'),
-    '#description'   => t('Select field from which to take the text to crosspost.'),
-    '#options'       => $text_fields,
-    '#default_value' => variable_get('vkxp_node_message_field_' . $node_type, 'title'),
+    '#type' => 'textarea',
+    '#title' => t('Pattern message'),
+    '#required' => true,
+    '#default_value' => variable_get('vkxp_node_message_field_' . $node_type, '[node:title]'),
   );
+  if (module_exists('token')) {
+    $form['vkxp']['vkxp_body']['token_tree'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Replacement patterns'),
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+      '#description' => theme('token_tree', array('token_types' => array('node'))),
+    );
+  }
 
   // Message length.
   $form['vkxp']['vkxp_body']['vkxp_node_message_length'] = array(

@@ -347,15 +347,9 @@ function _vkxp_get_node_images($node) {
 function _vkxp_get_node_message($node) {
 
   // Get message source.
-  $message_field = variable_get('vkxp_node_message_field_' . $node->type, 'title');
-  if ($message_field == 'title') {
-    $message = $node->title;
-  }
-  else {
-    $item    = field_get_items('node', $node, $message_field);
-    $message = trim(strip_tags($item[0]['value']));
-  }
-
+  $message_field = variable_get('vkxp_node_message_field_' . $node->type, '[node:title]');
+  $message = token_replace($message_field, array('node' => $node));
+  $message = trim(strip_tags($message));
   // Trim message if needed.
   $message_length = variable_get('vkxp_node_message_length_' . $node->type, 255);
   if (!empty($message_length ) && drupal_strlen($message) > $message_length) {
