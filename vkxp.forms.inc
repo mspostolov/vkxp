@@ -21,17 +21,17 @@ function _vkxp_process_node_settings_form(&$form) {
   $node_type = $form['#node_type']->type;
 
   $form['vkxp'] = array(
-    '#type'   => 'fieldset',
-    '#title'  => t('VKontakte CrossPoster settings'),
-    '#group'  => 'additional_settings',
+    '#type' => 'fieldset',
+    '#title' => t('VKontakte CrossPoster settings'),
+    '#group' => 'additional_settings',
   );
 
   // Enable setting.
   $form['vkxp']['vkxp_node_enabled'] = array(
-    '#type'          => 'checkbox',
-    '#title'         => t('Enable VKontakte CrossPoster'),
+    '#type' => 'checkbox',
+    '#title' => t('Enable VKontakte CrossPoster'),
     '#default_value' => variable_get('vkxp_node_enabled_' . $node_type),
-    '#description'   => t('Enable or disable crosspost for this node type.')
+    '#description' => t('Enable or disable crosspost for this node type.')
   );
 
   // Enable default setting.
@@ -55,17 +55,19 @@ function _vkxp_process_node_settings_form(&$form) {
 
   // Message.
   $form['vkxp']['vkxp_body'] = array(
-    '#type'  => 'fieldset',
+    '#type' => 'fieldset',
     '#title' => t('Message'),
   );
 
   // Message field.
-  $form['vkxp']['vkxp_body']['vkxp_node_message_field'] = array(
-    '#type' => 'textarea',
-    '#title' => t('Pattern message'),
-    '#required' => true,
-    '#default_value' => variable_get('vkxp_node_message_field_' . $node_type, '[node:title]'),
+  $form['vkxp']['vkxp_body']['vkxp_node_view_mode'] = array(
+    '#type' => 'select',
+    '#title' => t('Node view mode'),
+    '#description' => t('Select node view mode from which to take the text to crosspost.'),
+    '#options' => _vkxp_get_bundle_view_modes($node_type),
+    '#default_value' => variable_get('vkxp_node_view_mode_' . $node_type, 'full'),
   );
+
   if (module_exists('token')) {
     $form['vkxp']['vkxp_body']['token_tree'] = array(
       '#type' => 'fieldset',
@@ -78,37 +80,37 @@ function _vkxp_process_node_settings_form(&$form) {
 
   // Message length.
   $form['vkxp']['vkxp_body']['vkxp_node_message_length'] = array(
-    '#type'          => 'textfield',
-    '#title'         => t('Cut message'),
-    '#field_prefix'  => t('Cut message if it has more than'),
-    '#field_suffix'  => t('symbols'),
-    '#size'          => 4,
+    '#type' => 'textfield',
+    '#title' => t('Cut message'),
+    '#field_prefix' => t('Cut message if it has more than'),
+    '#field_suffix' => t('symbols'),
+    '#size' => 4,
     '#default_value' => variable_get('vkxp_node_message_length_' . $node_type, 255),
-    '#description'   => t('Leave this field empty to not cut a message.'),
-    '#attributes'    => array('style' => 'width:auto;'), // We need to break default Drupal style for this field.
+    '#description' => t('Leave this field empty to not cut a message.'),
+    '#attributes' => array('style' => 'width:auto;'), // We need to break default Drupal style for this field.
   );
 
   // Image.
   $form['vkxp']['vkxp_image'] = array(
-    '#type'  => 'fieldset',
+    '#type' => 'fieldset',
     '#title' => t('Image'),
   );
 
   // Image source.
   $form['vkxp']['vkxp_image']['vkxp_node_image_field'] = array(
-    '#type'          => 'select',
-    '#title'         => t('Image source'),
-    '#description'   => t('Select field from which to take the image to crosspost.'),
-    '#options'       => $image_fields,
+    '#type' => 'select',
+    '#title' => t('Image source'),
+    '#description' => t('Select field from which to take the image to crosspost.'),
+    '#options' => $image_fields,
     '#default_value' => variable_get('vkxp_node_image_field_' . $node_type, 0),
   );
 
   // Image limit.
   $form['vkxp']['vkxp_image']['vkxp_node_image_limit'] = array(
-    '#type'          => 'select',
-    '#title'         => t('Images limit'),
-    '#description'   => t('Select maximum amount of images to crosspost.'),
-    '#options'       => drupal_map_assoc(range(0, 10)),
+    '#type' => 'select',
+    '#title' => t('Images limit'),
+    '#description' => t('Select maximum amount of images to crosspost.'),
+    '#options' => drupal_map_assoc(range(0, 10)),
     '#default_value' => variable_get('vkxp_node_image_limit_' . $node_type, 0),
   );
 }
@@ -122,30 +124,30 @@ function _vkxp_process_node_settings_form(&$form) {
 function _vkxp_process_node_form(&$form) {
 
   $form['vkxp'] = array(
-    '#type'   => 'fieldset',
-    '#title'  => t('VKontakte CrossPoster'),
-    '#group'  => 'additional_settings',
+    '#type' => 'fieldset',
+    '#title' => t('VKontakte CrossPoster'),
+    '#group' => 'additional_settings',
     '#weight' => -10,
   );
 
   $form['vkxp']['vkxp_post_this_node'] = array(
-    '#type'          => 'checkbox',
-    '#title'         => t('Post this node to VK'),
+    '#type' => 'checkbox',
+    '#title' => t('Post this node to VK'),
     '#default_value' => variable_get('vkxp_node_enabled_default_' . $form['#node']->type),
-    '#description'   => t('After you submit this node it will be posted to VK.'),
+    '#description' => t('After you submit this node it will be posted to VK.'),
   );
 
   // Disable crosspost if cURL library is not installed on a server.
   if (!function_exists('curl_init')) {
-    $form['vkxp']['vkxp_post_this_node']['#disabled']    = TRUE;
-    $form['vkxp']['vkxp_post_this_node']['#value']       = 0;
+    $form['vkxp']['vkxp_post_this_node']['#disabled'] = TRUE;
+    $form['vkxp']['vkxp_post_this_node']['#value'] = 0;
     $form['vkxp']['vkxp_post_this_node']['#description'] = t("You can't crosspost nodes until cURL library is not installed on your server.");
   }
 
   // Disable crosspost if no access token recieved.
   if (!variable_get('vkxp_access_token')) {
-    $form['vkxp']['vkxp_post_this_node']['#disabled']    = TRUE;
-    $form['vkxp']['vkxp_post_this_node']['#value']       = 0;
+    $form['vkxp']['vkxp_post_this_node']['#disabled'] = TRUE;
+    $form['vkxp']['vkxp_post_this_node']['#value'] = 0;
     $form['vkxp']['vkxp_post_this_node']['#description'] = t("You can't crosspost nodes until access token not recieved from VK.");
   }
 }

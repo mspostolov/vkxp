@@ -109,7 +109,7 @@ function vkxp_admin_main_settings_validate($form, &$form_state) {
   $values = &$form_state['values'];
 
   // Remove spaces. Just in case of small user mistake.
-  $values['vkxp_app_id']     = trim($values['vkxp_app_id']);
+  $values['vkxp_app_id'] = trim($values['vkxp_app_id']);
   $values['vkxp_app_secret'] = trim($values['vkxp_app_secret']);
   $values['vkxp_app_secret'] = trim($values['vkxp_app_secret']);
 }
@@ -126,8 +126,8 @@ function vkxp_admin_access_token($form, &$form_state) {
   // FIRST STEP.
   // Getting authorize code from VK.
   $params = array();
-  $params['client_id']     = variable_get('vkxp_app_id');
-  $params['scope']         = VKXP_AUTHORIZE_SCOPE;
+  $params['client_id'] = variable_get('vkxp_app_id');
+  $params['scope'] = VKXP_AUTHORIZE_SCOPE;
   $params['redirect_uri']  = VKXP_AUTHORIZE_REDIRECT_URI;
   $params['response_type'] = VKXP_AUTHORIZE_RESPONSE_TYPE;
 
@@ -177,17 +177,17 @@ function vkxp_admin_access_token_submit($form, &$form_state) {
   // Collect params for authorization.
   // See http://vk.com/developers.php?oid=-1&p=%D0%90%D0%B2%D1%82%D0%BE%D1%80%D0%B8%D0%B7%D0%B0%D1%86%D0%B8%D1%8F_%D1%81%D0%B0%D0%B9%D1%82%D0%BE%D0%B2
   $params = array();
-  $params['client_id']     = variable_get('vkxp_app_id');
+  $params['client_id'] = variable_get('vkxp_app_id');
   $params['client_secret'] = variable_get('vkxp_app_secret');
-  $params['code']          = $form_state['values']['code'];
-  $params['redirect_uri']  = VKXP_ACCESS_TOKEN_REDIRECT_URI;
+  $params['code'] = $form_state['values']['code'];
+  $params['redirect_uri'] = VKXP_ACCESS_TOKEN_REDIRECT_URI;
 
   $data = vkxp_query('', $params, VKXP_ACCESS_TOKEN_URI);
 
   // Access token was recieved.
   if (!empty($data['access_token'])) {
     $message = array(
-      'text'     => t('Access token was successfully recieved.'),
+      'text' => t('Access token was successfully recieved.'),
       'severity' => 'status',
     );
     _vkxp_watchdog($message);
@@ -200,7 +200,7 @@ function vkxp_admin_access_token_submit($form, &$form_state) {
   // Access token was not recieved.
   elseif (isset($data['error']) && isset($data['error_description'])) {
     $message = array(
-      'text'     => t('Access token was not recieved. Reason: %error', array('%error' => check_plain($data['error_description']))),
+      'text' => t('Access token was not recieved. Reason: %error', array('%error' => check_plain($data['error_description']))),
       'severity' => 'error',
     );
     _vkxp_watchdog($message);

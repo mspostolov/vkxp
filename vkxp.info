@@ -3,6 +3,5 @@ description = Allow to post nodes automatically to the European social network V
 core = 7.x
 package = VK
 
-dependencies[] = token
 
 configure = admin/config/services/vkxp

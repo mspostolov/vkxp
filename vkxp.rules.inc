@@ -37,7 +37,7 @@ function vkxp_post_to_wall_action($node) {
     // Get node data that will be crossposted.
     $message = _vkxp_get_node_message($node);
     $images  = _vkxp_get_node_images($node);
-    $url     = url('node/' . $node->nid, array('absolute' => TRUE));
+    $url = url('node/' . $node->nid, array('absolute' => TRUE));
 
     // Post node to VK.
     _vkxp_post_to_wall($message, $images, $url);
